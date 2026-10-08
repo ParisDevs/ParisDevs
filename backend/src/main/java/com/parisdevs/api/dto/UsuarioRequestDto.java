@@ -1,5 +1,6 @@
 package com.parisdevs.api.dto;
 
+import com.parisdevs.api.enums.Cargo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -31,6 +32,13 @@ public class UsuarioRequestDto {
     public UsuarioRequestDto() {
     }
 
+    public UsuarioRequestDto(String nome, Cargo cargo, String email, String senha) {
+        this.nome = nome;
+        this.cargo = cargo;
+        this.email = email;
+        this.senha = senha;
+    }
+
     public String getNome() {
         return nome;
     }
@@ -51,7 +59,7 @@ public class UsuarioRequestDto {
         return cargo;
     }
 
-    public void setCargo(String cargo) {
+    public void setCargo(Cargo cargo) {
         this.cargo = cargo;
     }
 

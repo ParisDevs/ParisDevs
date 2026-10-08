@@ -1,7 +1,13 @@
 package com.parisdevs.api.entity;
 
+import com.parisdevs.api.enums.Cargo;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.persistence.*;
 
+@Entity
 public class Usuario {
 
     @Id
@@ -13,7 +19,7 @@ public class Usuario {
     private Filial filial;
 
     private String nome;
-    private String cargo;
+    private Cargo cargo;
     private String email;
     private String senha;
 
@@ -21,6 +27,7 @@ public class Usuario {
         return id;
     }
 
+    public Usuario(Integer id, String nome, Cargo cargo, String email, String senha) {
     public void setId(Integer id) {
         this.id = id;
     }
@@ -41,11 +48,11 @@ public class Usuario {
         this.nome = nome;
     }
 
-    public String getCargo() {
+    public Cargo getCargo() {
         return cargo;
     }
 
-    public void setCargo(String cargo) {
+    public void setCargo(Cargo cargo) {
         this.cargo = cargo;
     }
 

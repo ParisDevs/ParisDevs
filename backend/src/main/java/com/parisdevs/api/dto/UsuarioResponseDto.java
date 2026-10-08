@@ -1,5 +1,6 @@
 package com.parisdevs.api.dto;
 
+import com.parisdevs.api.enums.Cargo;
 import com.parisdevs.api.entity.Filial;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -37,11 +38,11 @@ public class UsuarioResponseDto {
         this.nome = nome;
     }
 
-    public String getCargo() {
+    public Cargo getCargo() {
         return cargo;
     }
 
-    public void setCargo(String cargo) {
+    public void setCargo(Cargo cargo) {
         this.cargo = cargo;
     }
 
