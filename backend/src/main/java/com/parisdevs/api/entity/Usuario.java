@@ -1,30 +1,21 @@
 package com.parisdevs.api.entity;
 
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 public class Usuario {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
+    @ManyToOne
+    @JoinColumn(name = "fkFilial")
+    private Filial filial;
+
     private String nome;
     private String cargo;
     private String email;
     private String senha;
-//    private Filial filial;
-
-    public Usuario() {
-    }
-
-    public Usuario(Integer id, String nome, String cargo, String email, String senha) {
-        this.id = id;
-        this.nome = nome;
-        this.cargo = cargo;
-        this.email = email;
-        this.senha = senha;
-    }
 
     public Integer getId() {
         return id;
@@ -32,6 +23,14 @@ public class Usuario {
 
     public void setId(Integer id) {
         this.id = id;
+    }
+
+    public Filial getFilial() {
+        return filial;
+    }
+
+    public void setFilial(Filial filial) {
+        this.filial = filial;
     }
 
     public String getNome() {

@@ -3,6 +3,7 @@ package com.parisdevs.api.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public class UsuarioRequestDto {
@@ -10,6 +11,9 @@ public class UsuarioRequestDto {
     @Schema(description = "Nome completo do usuário", example = "Bob Silva")
     @NotBlank(message = "O nome é obrigatório")
     private String nome;
+
+    @NotNull
+    private Integer idFilial;
 
     @NotBlank
     private String cargo;
@@ -27,19 +31,20 @@ public class UsuarioRequestDto {
     public UsuarioRequestDto() {
     }
 
-    public UsuarioRequestDto(String nome, String cargo, String email, String senha) {
-        this.nome = nome;
-        this.cargo = cargo;
-        this.email = email;
-        this.senha = senha;
-    }
-
     public String getNome() {
         return nome;
     }
 
     public void setNome(String nome) {
         this.nome = nome;
+    }
+
+    public Integer getIdFilial() {
+        return idFilial;
+    }
+
+    public void setIdFilial(Integer idFilial) {
+        this.idFilial = idFilial;
     }
 
     public String getCargo() {
