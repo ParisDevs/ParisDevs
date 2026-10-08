@@ -1,16 +1,19 @@
 package com.parisdevs.api.entity;
 
+import com.parisdevs.api.enums.Cargo;
+import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
+@Entity
 public class Usuario {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     private String nome;
-    private String cargo;
+    private Cargo cargo;
     private String email;
     private String senha;
 //    private Filial filial;
@@ -18,7 +21,7 @@ public class Usuario {
     public Usuario() {
     }
 
-    public Usuario(Integer id, String nome, String cargo, String email, String senha) {
+    public Usuario(Integer id, String nome, Cargo cargo, String email, String senha) {
         this.id = id;
         this.nome = nome;
         this.cargo = cargo;
@@ -42,11 +45,11 @@ public class Usuario {
         this.nome = nome;
     }
 
-    public String getCargo() {
+    public Cargo getCargo() {
         return cargo;
     }
 
-    public void setCargo(String cargo) {
+    public void setCargo(Cargo cargo) {
         this.cargo = cargo;
     }
 

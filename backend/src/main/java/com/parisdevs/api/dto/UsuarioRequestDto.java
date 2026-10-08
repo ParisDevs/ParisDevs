@@ -1,8 +1,10 @@
 package com.parisdevs.api.dto;
 
+import com.parisdevs.api.enums.Cargo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public class UsuarioRequestDto {
@@ -11,8 +13,9 @@ public class UsuarioRequestDto {
     @NotBlank(message = "O nome é obrigatório")
     private String nome;
 
-    @NotBlank
-    private String cargo;
+    @Schema(description = "Cargo do usuário no sistema", example = "ADMINISTRADOR")
+    @NotNull(message = "O cargo é obrigatório")
+    private Cargo cargo;
 
     @Schema(description = "Endereço de e-mail eletrônico", example = "bob@email.com")
     @NotBlank(message = "O e-mail é obrigatório")
@@ -27,7 +30,7 @@ public class UsuarioRequestDto {
     public UsuarioRequestDto() {
     }
 
-    public UsuarioRequestDto(String nome, String cargo, String email, String senha) {
+    public UsuarioRequestDto(String nome, Cargo cargo, String email, String senha) {
         this.nome = nome;
         this.cargo = cargo;
         this.email = email;
@@ -42,11 +45,11 @@ public class UsuarioRequestDto {
         this.nome = nome;
     }
 
-    public String getCargo() {
+    public Cargo getCargo() {
         return cargo;
     }
 
-    public void setCargo(String cargo) {
+    public void setCargo(Cargo cargo) {
         this.cargo = cargo;
     }
 
