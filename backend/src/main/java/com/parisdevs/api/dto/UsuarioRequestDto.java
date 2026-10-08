@@ -13,9 +13,11 @@ public class UsuarioRequestDto {
     @NotBlank(message = "O nome é obrigatório")
     private String nome;
 
-    @Schema(description = "Cargo do usuário no sistema", example = "ADMINISTRADOR")
-    @NotNull(message = "O cargo é obrigatório")
-    private Cargo cargo;
+    @NotNull
+    private Integer idFilial;
+
+    @NotBlank
+    private String cargo;
 
     @Schema(description = "Endereço de e-mail eletrônico", example = "bob@email.com")
     @NotBlank(message = "O e-mail é obrigatório")
@@ -45,7 +47,15 @@ public class UsuarioRequestDto {
         this.nome = nome;
     }
 
-    public Cargo getCargo() {
+    public Integer getIdFilial() {
+        return idFilial;
+    }
+
+    public void setIdFilial(Integer idFilial) {
+        this.idFilial = idFilial;
+    }
+
+    public String getCargo() {
         return cargo;
     }
 

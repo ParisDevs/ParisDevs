@@ -1,23 +1,18 @@
 package com.parisdevs.api.dto;
 
 import com.parisdevs.api.enums.Cargo;
+import com.parisdevs.api.entity.Filial;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 
 public class UsuarioResponseDto {
 
     private Integer id;
+    private FilialResponseSimplesDto filial;
     private String nome;
-    private Cargo cargo;
+    private String cargo;
     private String email;
-
-    public UsuarioResponseDto() {
-    }
-
-    public UsuarioResponseDto(Integer id, String nome, Cargo cargo, String email) {
-        this.id = id;
-        this.nome = nome;
-        this.cargo = cargo;
-        this.email = email;
-    }
+    private String senha;
 
     public Integer getId() {
         return id;
@@ -25,6 +20,14 @@ public class UsuarioResponseDto {
 
     public void setId(Integer id) {
         this.id = id;
+    }
+
+    public FilialResponseSimplesDto getFilial() {
+        return filial;
+    }
+
+    public void setFilial(FilialResponseSimplesDto filial) {
+        this.filial = filial;
     }
 
     public String getNome() {
@@ -49,5 +52,13 @@ public class UsuarioResponseDto {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getSenha() {
+        return senha;
+    }
+
+    public void setSenha(String senha) {
+        this.senha = senha;
     }
 }
