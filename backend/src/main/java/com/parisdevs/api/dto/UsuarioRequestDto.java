@@ -17,7 +17,7 @@ public class UsuarioRequestDto {
     private Integer idFilial;
 
     @NotBlank
-    private String cargo;
+    private Cargo cargo;
 
     @Schema(description = "Endereço de e-mail eletrônico", example = "bob@email.com")
     @NotBlank(message = "O e-mail é obrigatório")
@@ -32,8 +32,9 @@ public class UsuarioRequestDto {
     public UsuarioRequestDto() {
     }
 
-    public UsuarioRequestDto(String nome, Cargo cargo, String email, String senha) {
+    public UsuarioRequestDto(String nome, Integer idFilial, Cargo cargo, String email, String senha) {
         this.nome = nome;
+        this.idFilial = idFilial;
         this.cargo = cargo;
         this.email = email;
         this.senha = senha;
@@ -55,7 +56,7 @@ public class UsuarioRequestDto {
         this.idFilial = idFilial;
     }
 
-    public String getCargo() {
+    public Cargo getCargo() {
         return cargo;
     }
 

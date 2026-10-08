@@ -14,30 +14,33 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @ManyToOne
-    @JoinColumn(name = "fkFilial")
-    private Filial filial;
-
     private String nome;
     private Cargo cargo;
     private String email;
     private String senha;
 
+    @ManyToOne
+    @JoinColumn(name = "fkFilial")
+    private Filial filial;
+
+    public Usuario() {
+    }
+
+    public Usuario(Integer id, String nome, Cargo cargo, String email, String senha, Filial filial) {
+        this.id = id;
+        this.nome = nome;
+        this.cargo = cargo;
+        this.email = email;
+        this.senha = senha;
+        this.filial = filial;
+    }
+
     public Integer getId() {
         return id;
     }
 
-    public Usuario(Integer id, String nome, Cargo cargo, String email, String senha) {
     public void setId(Integer id) {
         this.id = id;
-    }
-
-    public Filial getFilial() {
-        return filial;
-    }
-
-    public void setFilial(Filial filial) {
-        this.filial = filial;
     }
 
     public String getNome() {
@@ -70,5 +73,13 @@ public class Usuario {
 
     public void setSenha(String senha) {
         this.senha = senha;
+    }
+
+    public Filial getFilial() {
+        return filial;
+    }
+
+    public void setFilial(Filial filial) {
+        this.filial = filial;
     }
 }
