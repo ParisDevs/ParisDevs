@@ -13,20 +13,11 @@ public class Receita {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer idReceita;
-
     @ManyToOne
     private ContaBancaria contaBancaria;
-
     private String descricao;
-
-    @NotNull
-    @Min(0)
     private Double valor;
-
-    @NotNull
     private LocalDate dataReceita;
-
-    @NotBlank
     private String categoria;
 
     public Receita() {
