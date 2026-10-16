@@ -1,0 +1,254 @@
+import { chartOfAccounts } from '@/data/fixtures'
+import type { LucideIcon } from 'lucide-react'
+import {
+  Building2,
+  Car,
+  Coins,
+  Drama,
+  GraduationCap,
+  HeartPulse,
+  Home,
+  Phone,
+  Sparkles,
+  UtensilsCrossed,
+  User,
+} from 'lucide-react'
+import { gastoChartGroup, isAiMechanism } from '@/domain/finance'
+import type { Transaction } from '@/domain/types'
+
+/** Tons de verde da identidade Avenza para barras e chips. */
+export const GASTO_BAR_GREENS = [
+  '#0B5D4E',
+  '#0E7C56',
+  '#117A63',
+  '#158F72',
+  '#1A8F72',
+  '#21987E',
+  '#2AA388',
+  '#35AE92',
+  '#45B89C',
+  '#5CC4A8',
+  '#75CEB4',
+  '#8EDBC5',
+] as const
+
+export type GastoGroupMeta = { label: string; Icon: LucideIcon }
+
+export const GASTO_GROUP_META: Record<string, GastoGroupMeta> = {
+  mercadorias: { label: 'Alimentação', Icon: UtensilsCrossed },
+  outros: { label: 'Outros', Icon: Sparkles },
+  ocupacao: { label: 'Ocupação', Icon: Home },
+  folha: { label: 'Folha de pagamento', Icon: User },
+  transporte: { label: 'Transporte', Icon: Car },
+  manutencao: { label: 'Manutenção', Icon: Drama },
+  contas: { label: 'Contas', Icon: Phone },
+  marketing: { label: 'Marketing', Icon: GraduationCap },
+  deducoes: { label: 'Deduções', Icon: HeartPulse },
+  financeiro: { label: 'Tarifas', Icon: Coins },
+  admin: { label: 'Administrativo', Icon: Building2 },
+}
+
+export type GastoCategoriaRow = {
+  id: string
+  label: string
+  amount: number
+  count: number
+  pct: number
+  color: string
+  Icon: LucideIcon
+}
+
+export type IaCategoriaRow = GastoCategoriaRow & {
+  conc: number
+  pend: number
+  ia: number
+  iaPct: number
+  conf: number
+}
+
+export function isGastoGroupId(id: string) {
+  return id in GASTO_GROUP_META
+}
+
+function greenShade(index: number) {
+  return GASTO_BAR_GREENS[Math.min(index, GASTO_BAR_GREENS.length - 1)]
+}
+
+export function filterSaidas(tx: Transaction[]) {
+  return tx.filter((t) => t.amount < 0 && t.recon !== 'interna')
+}
+
+export function txInGastoGroup(t: Transaction, groupId: string) {
+  return gastoChartGroup(t.category) === groupId
+}
+
+type SubDef = { slug: string; label: string; match: (code: string | null) => boolean }
+
+const MERCADORIAS_SUBS: SubDef[] = [
+  { slug: 'bebidas', label: 'Bebidas', match: (c) => !!c?.startsWith('C.1.2') },
+  { slug: 'hortifruti', label: 'Hortifruti', match: (c) => !!c?.startsWith('C.1.1.1') },
+  { slug: 'acougue', label: 'Açougue', match: (c) => !!c?.startsWith('C.1.1.2') },
+  { slug: 'padaria', label: 'Padaria', match: (c) => !!c?.startsWith('C.1.1.3') },
+  {
+    slug: 'alimentos',
+    label: 'Alimentos',
+    match: (c) =>
+      c === 'C.1.1'
+      || (!!c?.startsWith('C.1.1') && !c.startsWith('C.1.1.1') && !c.startsWith('C.1.1.2') && !c.startsWith('C.1.1.3')),
+  },
+]
+
+const GROUP_CHART_PARENT: Record<string, string> = {
+  ocupacao: 'O.1',
+  manutencao: 'O.2',
+  contas: 'O.3',
+  marketing: 'O.4',
+  transporte: 'O.5',
+  financeiro: 'F',
+  deducoes: 'D',
+}
+
+function slugFromCode(code: string) {
+  return code.replace(/\./g, '-').toLowerCase()
+}
+
+export function getSubsForGroup(groupId: string): SubDef[] {
+  if (groupId === 'mercadorias') return MERCADORIAS_SUBS
+  const parent = GROUP_CHART_PARENT[groupId]
+  if (parent) {
+    const children = chartOfAccounts.filter((c) => c.parent === parent)
+    if (children.length) {
+      return children.map((c) => ({
+        slug: slugFromCode(c.code),
+        label: c.name,
+        match: (code) => code === c.code || !!code?.startsWith(`${c.code}.`),
+      }))
+    }
+  }
+  const meta = GASTO_GROUP_META[groupId] ?? GASTO_GROUP_META.outros
+  return [{ slug: 'geral', label: meta.label, match: () => true }]
+}
+
+export function findSub(groupId: string, subSlug: string) {
+  return getSubsForGroup(groupId).find((s) => s.slug === subSlug)
+}
+
+export type LeafDef = { slug: string; label: string; code: string; match: (code: string | null) => boolean }
+
+export function getLeavesForSub(groupId: string, subSlug: string): LeafDef[] {
+  const sub = findSub(groupId, subSlug)
+  if (!sub) return []
+
+  if (groupId === 'mercadorias' && subSlug === 'bebidas') {
+    return chartOfAccounts
+      .filter((c) => c.parent === 'C.1.2')
+      .map((c) => ({
+        slug: slugFromCode(c.code),
+        label: c.name,
+        code: c.code,
+        match: (code) => code === c.code || !!code?.startsWith(`${c.code}.`),
+      }))
+  }
+
+  if (groupId === 'mercadorias') {
+    const prefix =
+      subSlug === 'hortifruti' ? 'C.1.1.1'
+      : subSlug === 'acougue' ? 'C.1.1.2'
+        : subSlug === 'padaria' ? 'C.1.1.3'
+          : 'C.1.1'
+    const node = chartOfAccounts.find((c) => c.code === prefix)
+    if (node && subSlug === 'alimentos') {
+      return [{ slug: slugFromCode(node.code), label: node.name, code: node.code, match: (c) => c === node.code }]
+    }
+    if (node) {
+      return [{ slug: slugFromCode(node.code), label: node.name, code: node.code, match: (c) => sub.match(c) }]
+    }
+  }
+
+  const parentCode = GROUP_CHART_PARENT[groupId]
+  if (parentCode) {
+    const subNode = chartOfAccounts.find((c) => slugFromCode(c.code) === subSlug)
+    if (subNode) {
+      const children = chartOfAccounts.filter((c) => c.parent === subNode.code)
+      if (children.length) {
+        return children.map((c) => ({
+          slug: slugFromCode(c.code),
+          label: c.name,
+          code: c.code,
+          match: (code) => code === c.code || !!code?.startsWith(`${c.code}.`),
+        }))
+      }
+      return [{
+        slug: slugFromCode(subNode.code),
+        label: subNode.name,
+        code: subNode.code,
+        match: (code) => sub.match(code),
+      }]
+    }
+  }
+
+  return [{ slug: 'geral', label: sub.label, code: '', match: (code) => sub.match(code) }]
+}
+
+export function findLeaf(groupId: string, subSlug: string, folhaSlug: string) {
+  return getLeavesForSub(groupId, subSlug).find((l) => l.slug === folhaSlug)
+}
+
+export function summarizeTransactions(items: Transaction[]) {
+  const amount = items.reduce((s, t) => s + Math.abs(t.amount), 0)
+  const conc = items.filter((t) => t.recon === 'conciliado').length
+  const pend = items.length - conc
+  const ia = items.filter((t) => isAiMechanism(t.mechanism)).length
+  const conf = items.length ? Math.round(items.reduce((s, t) => s + t.confidence, 0) / items.length) : 0
+  return { amount, count: items.length, conc, pend, ia, conf, iaPct: items.length ? Math.round((ia / items.length) * 100) : 0 }
+}
+
+export function buildGastoCategoriaRows(saidas: Transaction[]): GastoCategoriaRow[] {
+  const map = new Map<string, Transaction[]>()
+  for (const t of saidas) {
+    const g = gastoChartGroup(t.category)
+    const list = map.get(g) ?? []
+    list.push(t)
+    map.set(g, list)
+  }
+  const total = [...map.values()].reduce((s, items) => s + items.reduce((a, t) => a + Math.abs(t.amount), 0), 0)
+
+  const rows = [...map.entries()].map(([id, items]) => {
+    const meta = GASTO_GROUP_META[id] ?? GASTO_GROUP_META.outros
+    const { amount, count } = summarizeTransactions(items)
+    return {
+      id,
+      label: meta.label,
+      amount,
+      count,
+      pct: total ? (amount / total) * 100 : 0,
+      color: '#0B5D4E',
+      Icon: meta.Icon,
+    }
+  })
+
+  return rows
+    .filter((r) => r.amount > 0)
+    .sort((a, b) => b.amount - a.amount)
+    .map((r, i) => ({ ...r, color: greenShade(i) }))
+}
+
+export function buildIaCategoriaRows(saidas: Transaction[]): IaCategoriaRow[] {
+  return buildGastoCategoriaRows(saidas).map((row) => {
+    const items = saidas.filter((t) => gastoChartGroup(t.category) === row.id)
+    const stats = summarizeTransactions(items)
+    return { ...row, ...stats }
+  })
+}
+
+export function conciliacaoCategoriaHref(groupId: string) {
+  return `/conciliacao/categorias/${groupId}`
+}
+
+export function conciliacaoSubHref(groupId: string, subSlug: string) {
+  return `/conciliacao/categorias/${groupId}/${subSlug}`
+}
+
+export function conciliacaoFolhaHref(groupId: string, subSlug: string, folhaSlug: string) {
+  return `/conciliacao/categorias/${groupId}/${subSlug}/${folhaSlug}`
+}

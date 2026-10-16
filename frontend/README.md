@@ -1,16 +1,25 @@
-# React + Vite
+# Paris Devs — frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Website interno de gestão financeira do Grupo Paris 6. Stack do design brief: React, TypeScript, Vite, Tailwind CSS e Recharts.
 
-Currently, two official plugins are available:
+## Como rodar
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+npm run dev
+```
 
-## React Compiler
+Abre em `http://localhost:5173`. Sem cadastro público: entre com um e-mail das fixtures, por exemplo `gabriela.verissimo@paris6.com.br` ou `marcelo.santos@paris6.com.br`, e qualquer senha. SSO e MFA são simulados.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Contas de demonstração
 
-## Expanding the Oxlint configuration
+| Pessoa | E-mail | Perfil |
+|---|---|---|
+| Marcelo Santos | marcelo.santos@paris6.com.br | Gestor |
+| Gabriela Veríssimo | gabriela.verissimo@paris6.com.br | Analista |
+| Ana Souza | ana.souza@paris6.com.br | Administrador |
+| Patrícia Rocha | patricia.rocha@paris6.com.br | Auditor |
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## Telas
+
+As rotas cobrem os IDs do briefing (`AUTH-*`, `EMP-*`, `DASH-*`, `DOC-*`, `EXT-*`, `CONC-*`, `IA-*`, `PC-*`, `FIN-*`, `FC-*`, `DRE-*`, `ANA-*`, `ALT-*`, `CONF-*`). Estados da mesma tela (dashboard consolidado, DRE por CNPJ, filtros de alerta) reutilizam a página pai, como a planilha descreve.

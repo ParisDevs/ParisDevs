@@ -1,0 +1,224 @@
+@import 'tailwindcss';
+
+/* Linguagem visual da Avenza Finance (app.css):
+   verde esmeralda, neutros frios, sidebar branca, busca no topo. */
+
+@theme {
+  --color-fundo: #f7f9f8;
+  --color-superficie: #ffffff;
+  --color-superficie-2: #fbfcfc;
+  --color-menu: #ffffff;
+  --color-primaria: #0b5d4e;
+  --color-primaria-escura: #094c40;
+  --color-secundaria: #eaf3f0;
+  --color-texto: #0a1a17;
+  --color-texto-secundario: #5c6d6a;
+  --color-faint: #8b9b98;
+  --color-borda: #e8eceb;
+  --color-borda-forte: #d9e0de;
+  --color-sucesso: #0e7c56;
+  --color-alerta: #fcf4e3;
+  --color-alerta-texto: #9a6b08;
+  --color-erro: #b42318;
+  --color-informacao: #1f6f8b;
+  --color-destaque: #eaf3f0;
+  --color-brand-line: #cbe0da;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --radius-campo: 6px;
+  --radius-card: 14px;
+  --shadow-card: 0 1px 2px rgba(10, 26, 23, 0.04);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-fundo);
+    color: var(--color-texto);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  a {
+    color: var(--color-primaria);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primaria);
+    outline-offset: 2px;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  button {
+    cursor: pointer;
+  }
+}
+
+.t-h1 {
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.t-h2 {
+  font-size: 18px;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.t-h3 {
+  font-size: 14.5px;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.t-body {
+  font-size: 13.5px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.t-label {
+  font-size: 12.5px;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.t-button {
+  font-size: 13.5px;
+  line-height: 1.2;
+  font-weight: 500;
+}
+
+.t-kpi {
+  font-size: 26px;
+  line-height: 1.05;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.t-apoio {
+  font-size: 12.5px;
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Recharts — sem traço entre fatias, cursor ou contorno de foco */
+.chart-plot .recharts-sector,
+.chart-plot .recharts-pie-sector {
+  stroke: none !important;
+  stroke-width: 0 !important;
+}
+
+.chart-plot .recharts-tooltip-cursor,
+.chart-plot path.recharts-tooltip-cursor,
+.chart-plot path.recharts-rectangle.recharts-tooltip-cursor {
+  display: none !important;
+  opacity: 0 !important;
+  stroke: none !important;
+  fill: none !important;
+  pointer-events: none !important;
+}
+
+.chart-plot :focus,
+.chart-plot :focus-visible {
+  outline: none !important;
+}
+
+.chart-plot .recharts-surface:focus,
+.chart-plot .recharts-surface:focus-visible {
+  outline: none;
+}
+
+/* Pizza — sem retângulo de hover/foco do Recharts */
+.chart-plot-pie svg rect {
+  display: none !important;
+}
+
+.chart-plot-pie .recharts-sector,
+.chart-plot-pie path.recharts-sector {
+  stroke: none !important;
+  stroke-width: 0 !important;
+  outline: none !important;
+}
+
+.chart-plot-pie .recharts-wrapper:focus,
+.chart-plot-pie .recharts-wrapper:focus-visible,
+.chart-plot-pie .recharts-surface:focus,
+.chart-plot-pie .recharts-surface:focus-visible {
+  outline: none !important;
+}
+
+/* Barras — sem retângulo de hover do tooltip nem contorno na coluna */
+.chart-plot-bar .recharts-tooltip-cursor,
+.chart-plot-bar rect.recharts-tooltip-cursor,
+.chart-plot-bar path.recharts-tooltip-cursor,
+.chart-plot-bar path.recharts-rectangle.recharts-tooltip-cursor {
+  display: none !important;
+  opacity: 0 !important;
+  fill: none !important;
+  stroke: none !important;
+  pointer-events: none !important;
+}
+
+.chart-plot-bar .recharts-bar-rectangle,
+.chart-plot-bar .recharts-rectangle.recharts-bar-rectangle {
+  stroke: none !important;
+  stroke-width: 0 !important;
+  outline: none !important;
+}
+
+.chart-plot-bar .recharts-active-bar,
+.chart-plot-bar .recharts-active-bar .recharts-bar-rectangle {
+  stroke: none !important;
+  stroke-width: 0 !important;
+}
+
+.chart-plot-bar .recharts-wrapper:focus,
+.chart-plot-bar .recharts-wrapper:focus-visible,
+.chart-plot-bar .recharts-surface:focus,
+.chart-plot-bar .recharts-surface:focus-visible {
+  outline: none !important;
+}
