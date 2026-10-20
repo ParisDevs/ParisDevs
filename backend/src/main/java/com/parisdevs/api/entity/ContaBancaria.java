@@ -10,7 +10,6 @@ public class ContaBancaria {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer idContaBancaria;
-
     @ManyToOne
     private Filial filial;
     private String codigoBanco;

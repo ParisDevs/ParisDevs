@@ -1,20 +1,26 @@
 package com.parisdevs.api.dto;
 
-
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 public class FilialRequestDto {
 
-    @NotBlank
+    @Schema(description = "Razão Social da filial", example = "Paris 6 Jardins LTDA")
+    @NotBlank(message = "A razão social é obrigatória")
     private String razaoSocial;
 
-    @NotBlank
+    @Schema(description = "CNPJ da filial (apenas os 14 números)", example = "12345678000199")
+    @NotBlank(message = "O CNPJ é obrigatório")
+    @Size(min = 14, max = 14, message = "O CNPJ deve ter exatamente 14 caracteres")
     private String cnpj;
 
-    @NotBlank
+    @Schema(description = "Endereço físico completo da filial", example = "Alameda Lorena, 123 - São Paulo/SP")
+    @NotBlank(message = "O endereço é obrigatório")
     private String endereco;
 
-    @NotBlank
+    @Schema(description = "Token de autenticação para integrações", example = "tok_p6_jardins")
+    @NotBlank(message = "O token é obrigatório")
     private String token;
 
     public FilialRequestDto() {
@@ -27,36 +33,35 @@ public class FilialRequestDto {
         this.token = token;
     }
 
-
-    public @NotBlank String getRazaoSocial() {
+    public String getRazaoSocial() {
         return razaoSocial;
     }
 
-    public void setRazaoSocial(@NotBlank String razaoSocial) {
+    public void setRazaoSocial(String razaoSocial) {
         this.razaoSocial = razaoSocial;
     }
 
-    public @NotBlank String getCnpj() {
+    public String getCnpj() {
         return cnpj;
     }
 
-    public void setCnpj(@NotBlank String cnpj) {
+    public void setCnpj(String cnpj) {
         this.cnpj = cnpj;
     }
 
-    public @NotBlank String getEndereco() {
+    public String getEndereco() {
         return endereco;
     }
 
-    public void setEndereco(@NotBlank String endereco) {
+    public void setEndereco(String endereco) {
         this.endereco = endereco;
     }
 
-    public @NotBlank String getToken() {
+    public String getToken() {
         return token;
     }
 
-    public void setToken(@NotBlank String token) {
+    public void setToken(String token) {
         this.token = token;
     }
 }

@@ -27,7 +27,6 @@ public class UsuarioController {
     @GetMapping
     public ResponseEntity<List<UsuarioResponseDto>> listar() {
         List<Usuario> usuarios = usuarioService.listarUsuarios();
-
         return ResponseEntity.status(200).body(UsuarioMapper.toResponseDto(usuarios));
     }
 
@@ -56,6 +55,4 @@ public class UsuarioController {
         usuarioService.deletarPorid(id);
         return ResponseEntity.status(204).build();
     }
-
-
 }

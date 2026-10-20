@@ -6,4 +6,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ResponseStatus(code = HttpStatus.CONFLICT)
 public class EmailJaCadastradoException extends RuntimeException {
 
+    public EmailJaCadastradoException() {
+        super("O e-mail informado já está cadastrado no sistema.");
+    }
+
 }
