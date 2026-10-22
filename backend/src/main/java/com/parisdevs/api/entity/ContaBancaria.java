@@ -9,7 +9,7 @@ public class ContaBancaria {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer idContaBancaria;
+    private Long idContaBancaria;
     @ManyToOne
     private Filial filial;
     private String codigoBanco;
@@ -25,7 +25,7 @@ public class ContaBancaria {
     public ContaBancaria() {
     }
 
-    public ContaBancaria(Integer idContaBancaria, Filial filial, String codigoBanco, String nomeInstituicao, String agencia, String agenciaDigito, String numeroConta, String tipoConta, String cpfCnpjTitular, String nomeTitular, Boolean ativo) {
+    public ContaBancaria(Long idContaBancaria, Filial filial, String codigoBanco, String nomeInstituicao, String agencia, String agenciaDigito, String numeroConta, String tipoConta, String cpfCnpjTitular, String nomeTitular, Boolean ativo) {
         this.idContaBancaria = idContaBancaria;
         this.filial = filial;
         this.codigoBanco = codigoBanco;
