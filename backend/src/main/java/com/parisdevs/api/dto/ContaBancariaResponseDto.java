@@ -11,7 +11,7 @@ import jakarta.validation.constraints.NotNull;
 public class ContaBancariaResponseDto {
 
 
-    private Integer idContaBancaria;
+    private Long idContaBancaria;
     private FilialResponseSimplesDto filial;
     private String codigoBanco;
     private String nomeInstituicao;
@@ -27,7 +27,7 @@ public class ContaBancariaResponseDto {
     public ContaBancariaResponseDto() {
     }
 
-    public ContaBancariaResponseDto(Integer idContaBancaria, FilialResponseSimplesDto filial, String codigoBanco, String nomeInstituicao, String agencia, String agenciaDigito, String numeroConta, String tipoConta, String cpfCnpjTitular, String nomeTitular, Boolean ativo) {
+    public ContaBancariaResponseDto(Long idContaBancaria, FilialResponseSimplesDto filial, String codigoBanco, String nomeInstituicao, String agencia, String agenciaDigito, String numeroConta, String tipoConta, String cpfCnpjTitular, String nomeTitular, Boolean ativo) {
         this.idContaBancaria = idContaBancaria;
         this.filial = filial;
         this.codigoBanco = codigoBanco;
@@ -41,11 +41,11 @@ public class ContaBancariaResponseDto {
         this.ativo = ativo;
     }
 
-    public Integer getIdContaBancaria() {
+    public Long getIdContaBancaria() {
         return idContaBancaria;
     }
 
-    public void setIdContaBancaria(Integer idContaBancaria) {
+    public void setIdContaBancaria(Long idContaBancaria) {
         this.idContaBancaria = idContaBancaria;
     }
 

@@ -20,6 +20,9 @@ public class OperacaoResponseDto {
         private String nomeInstituicao;
         private String nomeTitular;
 
+        public ContaBancariaResponseSimplesDto() {
+        }
+
         public ContaBancariaResponseSimplesDto(Long idContaBancaria, String nomeInstituicao, String nomeTitular) {
             this.idContaBancaria = idContaBancaria;
             this.nomeInstituicao = nomeInstituicao;
