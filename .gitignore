@@ -1,0 +1,25 @@
+# IDE (o .idea já foi commitado; depois rode: git rm -r --cached .idea)
+.idea/
+*.iml
+.vscode/
+*.swp
+
+# SO
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Segredos
+.env
+.env.*
+!.env.example
+
+# Protótipos HTML fora do produto (Avenza / telas estáticas)
+/app.css
+/app.js
+/data.js
+/avenza-documentos.html
+/ext/
+
+# Backups gerados pelos scripts de split
+**/*.full.tsx
