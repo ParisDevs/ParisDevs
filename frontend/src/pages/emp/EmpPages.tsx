@@ -13,7 +13,7 @@ export function EmpSelectPage() {
 
   return (
     <div>
-      <PageHeader title="Escolha o contexto" />
+      <PageHeader kicker="Acesso" title="Escolha o contexto" subtitle="O recorte vale para saldos, extrato, conciliação e DRE." />
       <Card className="space-y-4">
         <h2 className="t-h2">{GROUP_NAME}</h2>
         <label className="t-body flex items-center gap-2">
@@ -31,7 +31,7 @@ export function EmpSelectPage() {
         <Button
           onClick={() => {
             setScope(choice)
-            navigate('/')
+            navigate('/dashboard')
           }}
         >
           Continuar
@@ -46,7 +46,7 @@ export function EmpGroupPage() {
   const period = lastMonth()
   return (
     <div>
-      <PageHeader title="Visão do grupo" />
+      <PageHeader kicker="Contexto" title="Visão do grupo" subtitle="Empresas do grupo e saldos observados nas contas conectadas." />
       <div className="grid gap-4 md:grid-cols-4">
         <Kpi label="Receita" value={money(st.receitaBruta)} />
         <Kpi label="Despesas" value={money(st.despesasTotais)} />
@@ -92,7 +92,7 @@ export function EmpCompaniesPage() {
 
   return (
     <div>
-      <PageHeader title="Empresas" />
+      <PageHeader kicker="Contexto" title="Empresas" subtitle="CNPJs do grupo e recorte operacional." />
       <input className="mb-4 w-full max-w-sm rounded-[8px] border border-borda bg-superficie px-4 py-3" placeholder="Buscar empresa" value={q} onChange={(e) => setQ(e.target.value)} />
       <Table columns={['Empresa', 'CNPJ', 'Status', 'Contas', '']} empty={!rows.length ? <Empty>Nenhuma empresa encontrada.</Empty> : null}>
         {rows.map((c) => (
@@ -105,7 +105,7 @@ export function EmpCompaniesPage() {
               <Button
                 onClick={() => {
                   setScope(c.id)
-                  navigate('/')
+                  navigate('/dashboard')
                 }}
               >
                 Selecionar
@@ -129,7 +129,7 @@ export function EmpCompaniesPage() {
         ) : (
           <Empty>Este CNPJ ainda não tem conta conectada.</Empty>
         )}
-        <Link className="t-label" to="/configuracoes/open-finance">Conectar banco</Link>
+        <Link className="t-label" to="/conexoes">Conectar banco</Link>
       </Drawer>
     </div>
   )
@@ -140,7 +140,7 @@ export function EmpComparePage() {
   if (companies.length < 2) return <Empty>Cadastre ao menos dois CNPJs para comparar.</Empty>
   return (
     <div>
-      <PageHeader title="Comparar empresas" />
+      <PageHeader kicker="Contexto" title="Comparar empresas" subtitle="Indicadores lado a lado no mesmo período." />
       <Table columns={['CNPJ', 'Receita', 'Despesa', 'Resultado', 'Margem']}>
         {companies.map((c) => {
           const s = statementFor(period, c.id)

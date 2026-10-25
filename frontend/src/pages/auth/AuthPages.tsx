@@ -1,10 +1,31 @@
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Building2 } from 'lucide-react'
 import { Banner, Button, Card, Field, Input } from '@/components/ui'
 import { useAuthCopy } from '@/components/layout/AuthLayout'
 import { users } from '@/data/fixtures'
 import { useApp } from '@/state/AppContext'
+
+function AuthCard({
+  kicker,
+  title,
+  subtitle,
+  children,
+}: {
+  kicker?: string
+  title: string
+  subtitle?: string
+  children: ReactNode
+}) {
+  return (
+    <Card className="p-7 md:p-8">
+      {kicker ? <p className="t-kicker mb-2">{kicker}</p> : null}
+      <h1 className="t-h2">{title}</h1>
+      {subtitle ? <p className="t-body mt-2 mb-6 text-texto-secundario">{subtitle}</p> : <div className="mb-5" />}
+      {children}
+    </Card>
+  )
+}
 
 export function LoginPage() {
   const { login } = useApp()
@@ -37,13 +58,14 @@ export function LoginPage() {
   }
 
   return (
-    <Card className="p-6 md:p-7">
+    <AuthCard kicker="Acesso" title="Entre na plataforma" subtitle="Use a conta da organização. O SSO permanece preparado até o provedor ser configurado.">
       {info ? <Banner className="mb-4" tone="info">{info}</Banner> : null}
 
-      <Button type="button" className="w-full" onClick={() => navigate('/sso')}>
+      <Button type="button" variant="secondary" className="w-full" onClick={() => navigate('/sso')}>
         <Building2 size={16} />
         {t.sso}
       </Button>
+      <p className="t-apoio mt-2 text-center text-faint">{t.ssoHint}</p>
 
       <div className="my-5 flex items-center gap-3">
         <span className="h-px flex-1 bg-borda" />
@@ -78,9 +100,10 @@ export function LoginPage() {
         <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1">
           <Link className="t-label" to="/recuperar-senha">{t.forgot}</Link>
           <Link className="t-label" to="/recuperar-senha?acao=atualizar">{t.update}</Link>
+          <Link className="t-label" to="/">Apresentação</Link>
         </div>
       </form>
-    </Card>
+    </AuthCard>
   )
 }
 
@@ -109,9 +132,7 @@ export function RecoverPage() {
   }
 
   return (
-    <Card className="p-6 md:p-7">
-      <h1 className="t-h1 mb-4">{update ? t.updateTitle : t.recoverTitle}</h1>
-      <p className="t-body mb-6 text-texto-secundario">{t.recoverHint}</p>
+    <AuthCard kicker="Acesso" title={update ? t.updateTitle : t.recoverTitle} subtitle={t.recoverHint}>
       <form onSubmit={submit} className="space-y-4">
         <Field label={t.user} error={error}>
           <Input type="text" value={email} onChange={(e) => { setEmail(e.target.value); setError('') }} autoComplete="username" autoCapitalize="none" spellCheck={false} />
@@ -120,7 +141,7 @@ export function RecoverPage() {
         <Button type="submit" className="w-full" disabled={loading}>{loading ? t.sending : t.sendCode}</Button>
         <Link className="t-label block" to="/login">{t.backLogin}</Link>
       </form>
-    </Card>
+    </AuthCard>
   )
 }
 
@@ -147,9 +168,7 @@ export function MfaPage() {
   }
 
   return (
-    <Card>
-      <h1 className="t-h1 mb-4">Verificação em duas etapas</h1>
-      <p className="t-body mb-6">Digite o código de 6 dígitos.</p>
+    <AuthCard kicker="Verificação" title="Duas etapas" subtitle="Informe o código de 6 dígitos enviado para o canal cadastrado. Neste ambiente o código é de demonstração.">
       <form onSubmit={submit} className="space-y-4">
         <Field label="Código" error={error}>
           <Input inputMode="numeric" maxLength={6} value={code} onChange={(e) => { setCode(e.target.value); setError('') }} />
@@ -165,7 +184,7 @@ export function MfaPage() {
           <button type="button" className="t-label" onClick={() => setInfo('Use o aplicativo autenticador ou o código do e-mail.')}>Trocar método</button>
         </div>
       </form>
-    </Card>
+    </AuthCard>
   )
 }
 
@@ -175,9 +194,7 @@ export function AuthenticatorPage() {
   const [error, setError] = useState('')
 
   return (
-    <Card>
-      <h1 className="t-h1 mb-4">Configurar autenticador</h1>
-      <p className="t-body mb-4 text-texto-secundario">Escaneie o QR Code no aplicativo autenticador ou informe a chave manual.</p>
+    <AuthCard kicker="Verificação" title="Configurar autenticador" subtitle="Escaneie o QR Code no aplicativo autenticador ou informe a chave manual. O QR desta tela é de demonstração.">
       <div className="mb-4 flex h-40 items-center justify-center rounded-[8px] border border-borda bg-destaque t-apoio">
         QR Code de demonstração
       </div>
@@ -198,7 +215,7 @@ export function AuthenticatorPage() {
         </Field>
         <Button type="submit" className="w-full">Confirmar dispositivo</Button>
       </form>
-    </Card>
+    </AuthCard>
   )
 }
 
@@ -208,47 +225,44 @@ export function SsoPage() {
   const [status, setStatus] = useState<'idle' | 'ok' | 'fail'>('idle')
 
   return (
-    <Card>
-      <h1 className="t-h1 mb-4">Entrar com SSO</h1>
-      <p className="t-body mb-6">Você será redirecionado para o provedor corporativo.</p>
-      {status === 'fail' ? <Banner tone="error">Não foi possível autenticar no provedor.</Banner> : null}
-      <div className="mt-4 flex flex-col gap-2">
+    <AuthCard kicker="Acesso" title="Entrar com SSO" subtitle="Não há redirecionamento real neste ambiente.">
+      <Banner tone="info" className="mb-4">Provedor de identidade não configurado. Esta tela está preparada para OpenID Connect quando as credenciais forem definidas.</Banner>
+      {status === 'fail' ? <Banner tone="error" className="mb-4">Falha simulada do provedor.</Banner> : null}
+      <div className="flex flex-col gap-2">
         <Button
+          variant="secondary"
           onClick={() => {
             setStatus('ok')
             login('ana.souza@paris6.com.br')
             setTimeout(() => navigate('/verificacao'), 500)
           }}
         >
-          Continuar no provedor
+          Continuar com usuário de demonstração
         </Button>
-        <Button variant="secondary" onClick={() => setStatus('fail')}>Simular falha</Button>
+        <Button variant="ghost" onClick={() => setStatus('fail')}>Simular falha do provedor</Button>
         <Link className="t-label" to="/login">Voltar para login</Link>
       </div>
-    </Card>
+    </AuthCard>
   )
 }
 
 export function PasswordChangedPage() {
   return (
-    <Card>
-      <h1 className="t-h1 mb-4">Senha alterada</h1>
+    <AuthCard kicker="Acesso" title="Senha alterada" subtitle="A senha foi atualizada neste ambiente. Entre com a nova senha.">
       <Banner tone="success">Senha alterada. Entre com a nova senha.</Banner>
       <Link to="/login" className="mt-6 block">
         <Button className="w-full">Entrar</Button>
       </Link>
-    </Card>
+    </AuthCard>
   )
 }
 
 export function SessionExpiredPage() {
   return (
-    <Card>
-      <h1 className="t-h1 mb-4">Sessão expirada</h1>
-      <p className="t-body mb-6">Sua sessão expirou. Entre novamente.</p>
+    <AuthCard kicker="Acesso" title="Sessão expirada" subtitle="A sessão foi encerrada por inatividade. Entre novamente para continuar.">
       <Link to="/login?motivo=expirada">
         <Button className="w-full">Entrar</Button>
       </Link>
-    </Card>
+    </AuthCard>
   )
 }

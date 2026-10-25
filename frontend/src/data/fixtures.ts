@@ -24,18 +24,20 @@ export const companies: Company[] = [
 
 export const banks: Record<string, { short: string; color: string }> = {
   Itaú: { short: 'IT', color: '#C25E0A' },
+  Nubank: { short: 'NU', color: '#820AD1' },
   XP: { short: 'XP', color: '#2B2F36' },
   Bradesco: { short: 'BR', color: '#B0203A' },
   Santander: { short: 'SA', color: '#B5281D' },
 }
 
 export const accounts: Account[] = [
-  { id: 'a1', companyId: 'c1', bank: 'Itaú', agency: '0412', number: '12345-6', type: 'Conta corrente', balance: 86420.55, provider: 'Open Finance', status: 'ok', lastSync: '2026-10-02T06:10:00', consentUntil: '2027-03-14' },
-  { id: 'a2', companyId: 'c1', bank: 'XP', agency: '0001', number: '889210-3', type: 'Conta investimento', balance: 154300, provider: 'Sandbox', status: 'ok', lastSync: '2026-10-02T06:12:00', consentUntil: '2027-01-30' },
-  { id: 'a3', companyId: 'c2', bank: 'Itaú', agency: '0412', number: '22841-0', type: 'Conta corrente', balance: 18400, provider: 'Open Finance', status: 'ok', lastSync: '2026-10-02T06:11:00', consentUntil: '2027-03-14' },
-  { id: 'a4', companyId: 'c2', bank: 'Bradesco', agency: '1290', number: '0045821-7', type: 'Conta corrente', balance: 6200, provider: 'Open Finance', status: 'atrasada', lastSync: '2026-09-30T05:58:00', consentUntil: '2026-12-02' },
-  { id: 'a5', companyId: 'c3', bank: 'Itaú', agency: '0798', number: '33012-4', type: 'Conta corrente', balance: 212870.3, provider: 'Open Finance', status: 'ok', lastSync: '2026-10-02T06:14:00', consentUntil: '2027-05-21' },
-  { id: 'a6', companyId: 'c3', bank: 'Santander', agency: '3321', number: '13002541-9', type: 'Conta corrente', balance: 41250.9, provider: 'Open Finance', status: 'erro', lastSync: '2026-09-28T06:02:00', consentUntil: '2026-09-28', note: 'Consentimento expirado. É preciso renovar a autorização no banco.' },
+  { id: 'a1', companyId: 'c1', bank: 'Itaú', agency: '0412', number: '12345-6', type: 'Conta corrente', balance: 86420.55, provider: 'Open Finance', status: 'ok', lastSync: '2026-10-02T06:10:00', consentUntil: '2027-03-14', institutionId: 'itau', connected: true },
+  { id: 'a2', companyId: 'c1', bank: 'XP', agency: '0001', number: '889210-3', type: 'Conta investimento', balance: 154300, provider: 'Sandbox', status: 'ok', lastSync: '2026-10-02T06:12:00', consentUntil: '2027-01-30', institutionId: 'xp', connected: true, note: 'Ambiente sandbox de demonstração.' },
+  { id: 'a3', companyId: 'c2', bank: 'Itaú', agency: '0412', number: '22841-0', type: 'Conta corrente', balance: 18400, provider: 'Open Finance', status: 'ok', lastSync: '2026-10-02T06:11:00', consentUntil: '2027-03-14', institutionId: 'itau', connected: true },
+  { id: 'a4', companyId: 'c2', bank: 'Bradesco', agency: '1290', number: '0045821-7', type: 'Conta corrente', balance: 6200, provider: 'Open Finance', status: 'atrasada', lastSync: '2026-09-30T05:58:00', consentUntil: '2026-12-02', institutionId: 'bradesco', connected: true, note: 'Sincronização atrasada. O saldo pode estar desatualizado.' },
+  { id: 'a5', companyId: 'c3', bank: 'Itaú', agency: '0798', number: '33012-4', type: 'Conta corrente', balance: 212870.3, provider: 'Open Finance', status: 'ok', lastSync: '2026-10-02T06:14:00', consentUntil: '2027-05-21', institutionId: 'itau', connected: true },
+  { id: 'a6', companyId: 'c3', bank: 'Santander', agency: '3321', number: '13002541-9', type: 'Conta corrente', balance: 41250.9, provider: 'Open Finance', status: 'erro', lastSync: '2026-09-28T06:02:00', consentUntil: '2026-09-28', institutionId: 'santander', connected: true, note: 'Consentimento expirado. É preciso renovar a autorização no banco.', balanceUnavailable: true },
+  { id: 'a7', companyId: 'c1', bank: 'BTG Pactual', agency: '0001', number: '77210-8', type: 'Conta investimento', balance: 98000, provider: 'Open Finance', status: 'ok', lastSync: '2026-10-02T06:16:00', consentUntil: '2027-04-10', institutionId: 'btg', connected: true },
 ]
 
 export const costCenters: CostCenter[] = [
@@ -84,6 +86,7 @@ export const chartOfAccounts: Category[] = [
   { code: 'O.3.3', name: 'Telecom', parent: 'O.3', group: 'despesa_operacional' },
   { code: 'O.4', name: 'Marketing', parent: 'O', group: 'despesa_operacional' },
   { code: 'O.5', name: 'Administrativo', parent: 'O', group: 'despesa_operacional' },
+  { code: 'O.6', name: 'Tecnologia e software', parent: 'O', group: 'despesa_operacional' },
   { code: 'F', name: 'Despesas financeiras', parent: null, group: 'despesa_financeira' },
   { code: 'F.1', name: 'Juros', parent: 'F', group: 'despesa_financeira' },
   { code: 'F.2', name: 'Tarifas', parent: 'F', group: 'despesa_financeira' },
@@ -92,6 +95,10 @@ export const chartOfAccounts: Category[] = [
   { code: 'T.1', name: 'IRPJ e CSLL', parent: 'T', group: 'tributo' },
   { code: 'X', name: 'Movimentação interna', parent: null, group: 'interna' },
   { code: 'X.1', name: 'Transferência entre contas', parent: 'X', group: 'interna' },
+  { code: 'I', name: 'Investimentos', parent: null, group: 'patrimonial' },
+  { code: 'I.1', name: 'Aplicações financeiras', parent: 'I', group: 'patrimonial' },
+  { code: 'P', name: 'Empréstimos e financiamentos', parent: null, group: 'patrimonial' },
+  { code: 'P.1', name: 'Captação e amortização', parent: 'P', group: 'patrimonial' },
 ]
 
 function tx(
@@ -128,6 +135,7 @@ function tx(
     mechanism,
     recon,
     intercompany: false,
+    source: extra.source ?? 'open_finance',
     ...extra,
   }
 }
@@ -272,6 +280,24 @@ export const defaultConfig: AppConfig = {
   requireHuman: true,
   currency: 'BRL',
   timezone: 'America/Sao_Paulo',
+  theme: 'light',
+  notifications: {
+    inApp: true,
+    email: true,
+    kinds: { financeiro: true, conciliacao: true, classificacao: true, integracao: true },
+  },
+  openFinance: {
+    provider: '',
+    status: 'nao_configurado',
+    clientIdMasked: '',
+    lastError: '',
+  },
+  aiApi: {
+    provider: '',
+    status: 'nao_configurado',
+    keyMasked: '',
+    lastError: '',
+  },
 }
 
 export const classificationRules = [
@@ -310,7 +336,7 @@ export const aiFeedback = [
 
 export const documents: Document[] = [
   { id: 'd1', number: 'NF 55231', supplier: 'AMBEV S.A.', date: '2026-09-03', amount: -4800, origin: 'XML', status: 'conciliado', companyId: 'c1', txId: 't02' },
-  { id: 'd2', number: 'NF 1203', supplier: 'Vinícola Serra Gaúcha Ltda', date: '2026-09-09', amount: -7350, origin: 'ERP', status: 'processado', companyId: 'c2', txId: 't19' },
+  { id: 'd2', number: 'NF 1203', supplier: 'Vinícola Serra Gaúcha Ltda', date: '2026-09-09', amount: -7350, origin: 'XML', status: 'processado', companyId: 'c2', txId: 't19' },
   { id: 'd3', number: 'Boleto 99210', supplier: 'Distribuidora Vale Verde', date: '2026-09-15', amount: -6240.1, origin: 'Arquivo', status: 'inconsistente', companyId: 'c1', txId: 't09', note: 'O valor pago é R$ 180,00 maior que o título.' },
   { id: 'd4', number: 'OS 5521', supplier: 'Frio Tec Refrigeração', date: '2026-09-14', amount: -2980, origin: 'Manual', status: 'pendente', companyId: 'c2', txId: 't20' },
   { id: 'd5', number: 'NF 88412', supplier: 'Frigorífico Boi Nobre S.A.', date: '2026-09-11', amount: -26400, origin: 'XML', status: 'conciliado', companyId: 'c3', txId: 't29' },

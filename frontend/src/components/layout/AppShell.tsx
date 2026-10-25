@@ -2,23 +2,29 @@ import {
   Bell,
   BookOpen,
   Building2,
+  BarChart3,
+  CalendarRange,
   ChevronDown,
   ChevronRight,
   CircleHelp,
   FileText,
   Landmark,
   LayoutDashboard,
+  Plug,
   LogOut,
   PanelLeft,
   PanelLeftClose,
   Scale,
   Settings,
+  Store,
   TrendingUp,
   Search,
   Wallet,
 } from 'lucide-react'
-import { useEffect, useMemo, useState, type SelectHTMLAttributes } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode, type SelectHTMLAttributes } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { AiChatbot } from '@/components/AiChatbot'
+import { BrandMark } from '@/components/BrandMark'
 import { GROUP_NAME, MONTHS, companies } from '@/data/fixtures'
 import { initials, monthLong } from '@/lib/format'
 import { cn } from '@/lib/cn'
@@ -27,25 +33,31 @@ import { Button, Input, Modal } from '../ui'
 
 const SETTINGS = [
   { to: '/configuracoes/perfil', label: 'Meu perfil' },
+  { to: '/configuracoes/preferencias', label: 'Preferências' },
   { to: '/configuracoes/seguranca', label: 'Segurança' },
   { to: '/configuracoes/usuarios', label: 'Cadastro de usuários', admin: true },
   { to: '/configuracoes/permissoes', label: 'Permissões', admin: true },
   { to: '/configuracoes/organizacao', label: 'Organização', admin: true },
-  { to: '/configuracoes/bancos', label: 'Bancos', admin: true },
-  { to: '/configuracoes/open-finance', label: 'Conexão com APIs', admin: true },
-  { to: '/configuracoes/erp', label: 'Integrações ERP', admin: true },
-  { to: '/configuracoes/credenciais', label: 'Integrações / API keys', admin: true },
-  { to: '/alertas', label: 'Notificações' },
-  { to: '/configuracoes/ia', label: 'Classificação', admin: true },
+  { to: '/configuracoes/open-finance', label: 'Open Finance', admin: true },
+  { to: '/configuracoes/ia', label: 'API de IA', admin: true },
   { to: '/configuracoes/regras', label: 'Regras financeiras', admin: true },
   { to: '/configuracoes/auditoria', label: 'Auditoria', admin: true },
 ]
 
-function TopbarSelect({ className, children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
+function TopbarSelect({
+  className,
+  children,
+  icon,
+  ...props
+}: SelectHTMLAttributes<HTMLSelectElement> & { icon?: ReactNode }) {
   return (
     <label className={cn('relative inline-flex shrink-0 items-center', className)}>
+      {icon ? <span className="pointer-events-none absolute top-1/2 left-3 z-[1] -translate-y-1/2 text-faint">{icon}</span> : null}
       <select
-        className="h-9 w-full min-w-0 appearance-none rounded-[8px] border border-borda-forte bg-superficie py-0 pr-9 pl-3.5 text-[13px] leading-9 text-texto outline-none"
+        className={cn(
+          'h-9 w-full min-w-0 appearance-none rounded-[8px] border border-borda-forte bg-superficie py-0 pr-9 text-[13px] leading-9 text-texto outline-none',
+          icon ? 'pl-9' : 'pl-3.5',
+        )}
         {...props}
       >
         {children}
@@ -63,23 +75,25 @@ type NavLinkItem = {
 }
 
 const OPERACAO_ITEMS: NavLinkItem[] = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/documentos', label: 'Documentos', icon: FileText, count: 'documentos' },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/conexoes', label: 'Conexões bancárias', icon: Plug },
   { to: '/extratos', label: 'Extratos', icon: Landmark },
   { to: '/conciliacao', label: 'Conciliação', icon: Scale },
+  { to: '/documentos', label: 'Documentos', icon: FileText, count: 'documentos' },
   { to: '/contas-a-pagar', label: 'Contas a pagar', icon: Wallet },
   { to: '/contas-a-receber', label: 'Contas a receber', icon: Wallet },
 ]
 
-const ANALISE_ITEMS: NavLinkItem[] = [
-  { to: '/dre', label: 'DRE', icon: Building2 },
+const ANALISE_PRIMARY: NavLinkItem = { to: '/dre', label: 'Relatórios', icon: Landmark }
+const ANALISE_MORE: NavLinkItem[] = [
   { to: '/fluxo-de-caixa', label: 'Fluxo de caixa', icon: TrendingUp },
-  { to: '/analytics', label: 'Analytics', icon: TrendingUp },
+  { to: '/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/alertas', label: 'Alertas', icon: Bell },
 ]
+const ANALISE_ITEMS: NavLinkItem[] = [ANALISE_PRIMARY, ...ANALISE_MORE]
 
 function navSectionActive(items: NavLinkItem[], pathname: string) {
-  return items.some((item) => (item.to === '/' ? pathname === '/' : pathname === item.to || pathname.startsWith(`${item.to}/`)))
+  return items.some((item) => (item.to === '/dashboard' ? pathname === '/dashboard' : pathname === item.to || pathname.startsWith(`${item.to}/`)))
 }
 
 export function AppShell() {
@@ -90,9 +104,10 @@ export function AppShell() {
   const admin = session?.role === 'administrador'
   const settingsItems = SETTINGS.filter((item) => !item.admin || admin)
   const settingsActive = settingsItems.some((item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`))
-  const [confOpen, setConfOpen] = useState(() => location.pathname.startsWith('/configuracoes') || location.pathname === '/alertas')
-  const [operacaoOpen, setOperacaoOpen] = useState(() => navSectionActive(OPERACAO_ITEMS, location.pathname))
-  const [analiseOpen, setAnaliseOpen] = useState(() => navSectionActive(ANALISE_ITEMS, location.pathname))
+  const [confOpen, setConfOpen] = useState(true)
+  const [analiseOpen, setAnaliseOpen] = useState(() => navSectionActive(ANALISE_MORE, location.pathname))
+  const [userMenu, setUserMenu] = useState(false)
+  const userMenuRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -145,9 +160,17 @@ export function AppShell() {
   }, [scope, branch])
 
   useEffect(() => {
-    if (navSectionActive(OPERACAO_ITEMS, location.pathname)) setOperacaoOpen(true)
-    if (navSectionActive(ANALISE_ITEMS, location.pathname)) setAnaliseOpen(true)
+    if (navSectionActive(ANALISE_MORE, location.pathname)) setAnaliseOpen(true)
+    if (location.pathname.startsWith('/configuracoes') || location.pathname.startsWith('/plano-de-contas')) setConfOpen(true)
   }, [location.pathname])
+
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!userMenuRef.current?.contains(e.target as Node)) setUserMenu(false)
+    }
+    document.addEventListener('mousedown', onDocClick)
+    return () => document.removeEventListener('mousedown', onDocClick)
+  }, [])
 
   function confirmLogout() {
     logout()
@@ -167,18 +190,18 @@ export function AppShell() {
         <NavLink
           key={item.to}
           to={item.to}
-          end={item.to === '/'}
+          end={item.to === '/dashboard'}
           onClick={() => setOpen(false)}
           className={({ isActive }) =>
-            `flex items-center gap-[11px] rounded-[6px] px-2.5 py-2 text-[13.5px] font-medium ${isActive ? 'bg-destaque font-semibold text-primaria' : 'text-texto-secundario hover:bg-superficie-2 hover:text-texto'}`
+            `flex items-center gap-[11px] rounded-[10px] px-2.5 py-[9px] text-[13.5px] font-medium ${isActive ? 'bg-menu-active font-semibold text-primaria' : 'text-white/72 hover:bg-menu-hover hover:text-white'}`
           }
         >
           {({ isActive }) => (
             <>
-              <Icon size={14} className={isActive ? 'text-primaria' : 'text-faint'} />
+              <Icon size={15} strokeWidth={1.75} className={isActive ? 'text-primaria' : 'text-white/50'} />
               <span className="flex-1">{item.label}</span>
               {n > 0 ? (
-                <span className="rounded-full bg-alerta px-1.5 py-px text-[11px] font-semibold text-alerta-texto">{n}</span>
+                <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#2f8a68] px-1 text-[10px] font-semibold text-white">{n}</span>
               ) : null}
             </>
           )}
@@ -199,36 +222,31 @@ export function AppShell() {
         <button
           type="button"
           onClick={onToggle}
-          className={`mb-0.5 flex w-full items-center gap-2 rounded-[6px] px-2.5 py-1.5 text-left text-[11px] font-semibold tracking-[0.06em] uppercase ${active || open ? 'text-texto' : 'text-faint hover:bg-superficie-2 hover:text-texto-secundario'}`}
+          className={`mb-0.5 flex w-full items-center gap-2 rounded-[6px] px-2.5 py-1.5 text-left text-[11px] font-semibold tracking-[0.08em] uppercase ${active || open ? 'text-white/55' : 'text-white/35 hover:text-white/55'}`}
           aria-expanded={open}
         >
           <span className="flex-1">{label}</span>
-          {open ? <ChevronDown size={12} className="text-faint" /> : <ChevronRight size={12} className="text-faint" />}
+          {open ? <ChevronDown size={12} className="text-white/35" /> : <ChevronRight size={12} className="text-white/35" />}
         </button>
-        {open ? <div className="flex flex-col gap-0.5">{renderNavLinks(items)}</div> : null}
+        <div className="flex flex-col gap-0.5">{renderNavLinks(items)}</div>
       </div>
     )
   }
 
   return (
     <div className="min-h-svh bg-fundo lg:flex">
-      {open ? <div className="fixed inset-0 z-30 bg-[#0A1A17]/35 lg:hidden" onClick={() => setOpen(false)} /> : null}
+      {open ? <div className="fixed inset-0 z-30 bg-[#062921]/50 lg:hidden" onClick={() => setOpen(false)} /> : null}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-[236px] flex-col border-r border-borda bg-superficie transition-transform ${open ? 'translate-x-0' : '-translate-x-full'} ${collapsed ? '' : 'lg:sticky lg:top-0 lg:h-svh lg:translate-x-0'}`}
+        className={`fixed inset-y-0 left-0 z-40 flex h-svh max-h-svh w-[236px] min-h-0 flex-col overflow-hidden bg-menu text-white transition-transform ${open ? 'translate-x-0' : '-translate-x-full'} ${collapsed ? '' : 'lg:sticky lg:top-0 lg:translate-x-0'}`}
       >
-        <div className="flex h-[60px] shrink-0 items-center justify-between gap-2.5 border-b border-borda px-5">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-primaria text-[13px] font-bold tracking-tight text-white">
-              P
-            </span>
-            <span className="text-[15px] font-semibold tracking-tight">
-              Paris Devs <span className="font-normal text-faint">Finance</span>
-            </span>
-          </div>
+        <div className="flex h-[64px] shrink-0 items-center justify-between gap-2 px-4">
+          <NavLink to="/dashboard" className="no-underline">
+            <BrandMark />
+          </NavLink>
           <button
             type="button"
-            className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-[6px] text-texto-secundario hover:bg-superficie-2"
+            className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-[6px] text-white/55 hover:bg-menu-hover hover:text-white"
             onClick={() => {
               setOpen(false)
               if (window.matchMedia('(min-width: 1024px)').matches) hideSidebar()
@@ -239,88 +257,58 @@ export function AppShell() {
           </button>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-[22px] overflow-y-auto px-3 py-[18px]">
-          {renderNavDropdown(
-            'Operação',
-            operacaoOpen,
-            () => setOperacaoOpen((v) => !v),
-            navSectionActive(OPERACAO_ITEMS, location.pathname),
-            OPERACAO_ITEMS,
-          )}
+        <nav className="nav-scroll flex flex-1 flex-col gap-[22px] px-3 py-[18px]">
+          <div>
+            <p className="mb-1.5 px-2.5 text-[11px] font-semibold tracking-[0.08em] text-white/40 uppercase">Operação</p>
+            <div className="flex flex-col gap-0.5">{renderNavLinks(OPERACAO_ITEMS)}</div>
+          </div>
           {renderNavDropdown(
             'Análise',
             analiseOpen,
             () => setAnaliseOpen((v) => !v),
             navSectionActive(ANALISE_ITEMS, location.pathname),
-            ANALISE_ITEMS,
+            analiseOpen ? ANALISE_ITEMS : [ANALISE_PRIMARY],
           )}
-          <div>
-            <p className="mb-2 px-2.5 text-[11px] font-semibold tracking-[0.06em] text-faint uppercase">Configuração</p>
-            <div className="flex flex-col gap-0.5">
-              <NavLink
-                to="/plano-de-contas"
-                onClick={() => setOpen(false)}
-                className={({ isActive }) =>
-                  `flex items-center gap-[11px] rounded-[6px] px-2.5 py-2 text-[13.5px] font-medium ${isActive ? 'bg-destaque font-semibold text-primaria' : 'text-texto-secundario hover:bg-superficie-2 hover:text-texto'}`
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <BookOpen size={14} className={isActive ? 'text-primaria' : 'text-faint'} />
-                    <span className="flex-1">Plano de contas</span>
-                  </>
-                )}
-              </NavLink>
-              <div>
-                <button
-                  type="button"
-                  onClick={() => setConfOpen((v) => !v)}
-                  className={`flex w-full items-center gap-[11px] rounded-[6px] px-2.5 py-2 text-[13.5px] font-medium ${settingsActive || confOpen ? 'text-texto' : 'text-texto-secundario hover:bg-superficie-2 hover:text-texto'}`}
-                >
-                  <Settings size={14} className={settingsActive ? 'text-primaria' : 'text-faint'} />
-                  <span className="flex-1 text-left">Configurações</span>
-                  {confOpen ? <ChevronDown size={12} className="text-faint" /> : <ChevronRight size={12} className="text-faint" />}
-                </button>
-                {confOpen ? (
-                  <div className="mt-0.5 ml-4 flex flex-col gap-px border-l border-borda pl-2">
-                    {settingsItems.map((sub) => (
-                      <NavLink
-                        key={sub.to}
-                        to={sub.to}
-                        onClick={() => setOpen(false)}
-                        className={({ isActive }) =>
-                          `rounded-[6px] px-2 py-1.5 text-[12.5px] font-medium ${isActive ? 'bg-destaque font-semibold text-primaria' : 'text-texto-secundario hover:bg-superficie-2 hover:text-texto'}`
-                        }
-                      >
-                        {sub.label}
-                      </NavLink>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </div>
+          {renderNavDropdown(
+            'Configuração',
+            confOpen,
+            () => setConfOpen((v) => !v),
+            settingsActive || location.pathname.startsWith('/plano-de-contas') || location.pathname.startsWith('/configuracoes'),
+            confOpen
+              ? [
+                  { to: '/plano-de-contas', label: 'Plano de contas', icon: BookOpen },
+                  { to: '/configuracoes', label: 'Configurações', icon: Settings },
+                ]
+              : [],
+          )}
         </nav>
 
-        <div className="border-t border-borda px-3 py-3.5">
+        <div className="shrink-0 border-t border-white/8 px-3 pt-2 pb-4">
           <button
             type="button"
+            className="mb-2 flex w-full items-center gap-[11px] rounded-[10px] px-2.5 py-[9px] text-left text-[13.5px] font-medium text-white/72 hover:bg-menu-hover hover:text-white"
             onClick={() => setConfirmLeave(true)}
-            className="mb-3 flex w-full items-center gap-[11px] rounded-[6px] px-2.5 py-2 text-[13.5px] font-medium text-texto-secundario hover:bg-superficie-2 hover:text-texto"
           >
-            <LogOut size={14} className="text-faint" />
+            <LogOut size={15} strokeWidth={1.75} className="text-white/50" />
             Sair
           </button>
-          <div className="px-2.5 text-[11.5px] text-faint">
-            <strong className="mb-0.5 block text-[12.5px] font-semibold text-[#243330]">{GROUP_NAME}</strong>
-            {companies.length} empresas · plano Corporativo
+          <div className="flex items-center gap-2.5 rounded-[12px] bg-white/[0.06] px-3 py-2.5">
+            <img
+              src="/brand/paris6.png"
+              alt=""
+              className="h-9 w-9 shrink-0 rounded-full object-cover"
+            />
+            <div className="min-w-0">
+              <strong className="block truncate text-[12.5px] font-semibold text-white/90">{GROUP_NAME}</strong>
+              <p className="truncate text-[11px] text-white/45">{companies.length} empresas - Plano Corporativo</p>
+            </div>
           </div>
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 border-b border-borda bg-superficie">
-          <div className="flex h-[60px] items-center gap-3 px-4 lg:px-7">
+      <div className="flex min-w-0 flex-1 flex-col bg-fundo">
+        <header className="sticky top-0 z-20 border-b border-borda/80 bg-superficie/90 backdrop-blur-md">
+          <div className="flex h-[64px] items-center gap-3 px-4 lg:px-7">
             <button
               type="button"
               className={`inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[6px] text-texto-secundario hover:bg-superficie-2 ${collapsed ? '' : 'lg:hidden'}`}
@@ -344,7 +332,7 @@ export function AppShell() {
                 </label>
               ) : (
                 <>
-                  <TopbarSelect value={empresa} onChange={(e) => onEmpresa(e.target.value)} className="min-w-[13.75rem]" aria-label="Empresa">
+                  <TopbarSelect value={empresa} onChange={(e) => onEmpresa(e.target.value)} className="min-w-[13.75rem]" aria-label="Empresa" icon={<Building2 size={14} />}>
                     <option value="grupo">Todas as empresas</option>
                     {companies.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -352,7 +340,7 @@ export function AppShell() {
                       </option>
                     ))}
                   </TopbarSelect>
-                  <TopbarSelect value={branch} onChange={(e) => onFilial(e.target.value)} className="min-w-[13.75rem]" aria-label="Filial">
+                  <TopbarSelect value={branch} onChange={(e) => onFilial(e.target.value)} className="min-w-[13.75rem]" aria-label="Filial" icon={<Store size={14} />}>
                     <option value="todas">Todas as filiais</option>
                     {filiais.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -360,7 +348,7 @@ export function AppShell() {
                       </option>
                     ))}
                   </TopbarSelect>
-                  <TopbarSelect value={period} onChange={(e) => setPeriod(e.target.value)} className="min-w-[12.5rem]" aria-label="Período">
+                  <TopbarSelect value={period} onChange={(e) => setPeriod(e.target.value)} className="min-w-[12.5rem]" aria-label="Período" icon={<CalendarRange size={14} />}>
                     {MONTHS.map((m) => (
                       <option key={m} value={m}>
                         {monthLong(m)}
@@ -372,31 +360,47 @@ export function AppShell() {
             </div>
 
             <div className="ml-auto flex shrink-0 items-center gap-1.5">
-              <button type="button" className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-[6px] text-texto-secundario hover:bg-superficie-2" title="Central de ajuda" aria-label="Ajuda">
-                <CircleHelp size={16} />
-              </button>
               <button type="button" className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-[6px] text-texto-secundario hover:bg-superficie-2" onClick={() => navigate('/alertas')} aria-label="Notificações">
                 <Bell size={16} />
               </button>
-              <button
-                type="button"
-                className="flex items-center gap-2 rounded-full border border-borda py-1 pr-2.5 pl-1 hover:bg-superficie-2"
-                onClick={() => navigate('/configuracoes/perfil')}
-              >
-                <span className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-full bg-primaria text-[10.5px] font-bold text-white">
-                  {initials(session?.name ?? '')}
-                </span>
-                <span className="hidden text-[12.5px] font-medium sm:block">{session?.name.split(' ')[0]}</span>
-                <ChevronDown size={9} className="text-faint" />
+              <button type="button" className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-[6px] text-texto-secundario hover:bg-superficie-2" title="Central de ajuda" aria-label="Ajuda">
+                <CircleHelp size={16} />
               </button>
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 rounded-full py-1 pr-1.5 pl-1 hover:bg-superficie-2"
+                  onClick={() => setUserMenu((v) => !v)}
+                  aria-expanded={userMenu}
+                  aria-haspopup="menu"
+                >
+                  <span className="inline-flex h-[28px] w-[28px] items-center justify-center rounded-full bg-primaria text-[10.5px] font-bold text-white">
+                    {initials(session?.name ?? '')}
+                  </span>
+                  <span className="hidden text-[13px] font-medium sm:block">{session?.name.split(' ')[0]}</span>
+                </button>
+                {userMenu ? (
+                  <div role="menu" className="absolute top-[calc(100%+8px)] right-0 z-30 min-w-[180px] rounded-[12px] border border-borda bg-superficie py-1 shadow-[0_8px_24px_rgba(13,31,27,0.12)]">
+                    <button type="button" role="menuitem" className="t-body flex w-full px-3 py-2 text-left hover:bg-superficie-2" onClick={() => { setUserMenu(false); navigate('/configuracoes/perfil') }}>
+                      Meu perfil
+                    </button>
+                    <button type="button" role="menuitem" className="t-body flex w-full items-center gap-2 px-3 py-2 text-left text-texto-secundario hover:bg-superficie-2" onClick={() => { setUserMenu(false); setConfirmLeave(true) }}>
+                      <LogOut size={14} />
+                      Sair
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-[1320px] flex-1 p-5 md:p-7">
+        <main className="mx-auto w-full max-w-[1280px] flex-1 p-5 md:p-8">
           <Outlet />
         </main>
       </div>
+
+      <AiChatbot />
 
       <Modal
         title="Sair do sistema"

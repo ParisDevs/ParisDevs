@@ -8,6 +8,12 @@ export type AlertGroup = 'critico' | 'atencao' | 'informacao'
 export type AlertKind = 'financeiro' | 'conciliacao' | 'classificacao' | 'integracao'
 export type DocStatus = 'pendente' | 'inconsistente' | 'processado' | 'conciliado'
 export type BillStatus = 'aberto' | 'pago' | 'vencido'
+export type TxSource = 'open_finance' | 'import' | 'manual'
+export type DocOrigin = 'Arquivo' | 'XML' | 'Manual' | 'OCR'
+export type DreNature = 'receita' | 'despesa' | 'transferencia' | 'patrimonial' | 'nao_classificado'
+export type ThemeMode = 'light' | 'dark'
+export type IntegrationStatus = 'nao_configurado' | 'configurado' | 'erro'
+export type StatementFormat = 'ofx' | 'csv' | 'pdf' | 'txt' | 'xml'
 
 export type Session = {
   userId: string
@@ -43,6 +49,9 @@ export type Account = {
   lastSync: string
   consentUntil: string
   note?: string
+  institutionId?: string
+  connected?: boolean
+  balanceUnavailable?: boolean
 }
 
 export type Category = {
@@ -71,6 +80,10 @@ export type Transaction = {
   intercompany: boolean
   pairId?: string
   duplicateOf?: string
+  source?: TxSource
+  importId?: string
+  fitId?: string
+  ocrConfidence?: number
 }
 
 export type ExpectedEntry = {
@@ -106,7 +119,7 @@ export type Document = {
   supplier: string
   date: string
   amount: number
-  origin: 'Arquivo' | 'XML' | 'Manual' | 'ERP'
+  origin: DocOrigin
   status: DocStatus
   companyId: string
   txId?: string
@@ -152,6 +165,57 @@ export type AppConfig = {
   requireHuman: boolean
   currency: string
   timezone: string
+  theme: ThemeMode
+  notifications: {
+    inApp: boolean
+    email: boolean
+    kinds: { financeiro: boolean; conciliacao: boolean; classificacao: boolean; integracao: boolean }
+  }
+  openFinance: {
+    provider: string
+    status: IntegrationStatus
+    clientIdMasked: string
+    lastError: string
+  }
+  aiApi: {
+    provider: string
+    status: IntegrationStatus
+    keyMasked: string
+    lastError: string
+  }
+}
+
+export type Institution = {
+  id: string
+  name: string
+  short: string
+  color: string
+  openFinance: boolean
+}
+
+export type StatementImport = {
+  id: string
+  fileName: string
+  format: StatementFormat
+  accountId: string
+  at: string
+  user: string
+  count: number
+  errors: string[]
+  status: 'concluida' | 'parcial' | 'erro'
+}
+
+export type PreviewMovement = {
+  id: string
+  date: string
+  description: string
+  counterparty: string
+  document: string
+  amount: number
+  fitId: string
+  confidence: number
+  missing: string[]
+  possibleDuplicate?: boolean
 }
 
 export type AuditEntry = {

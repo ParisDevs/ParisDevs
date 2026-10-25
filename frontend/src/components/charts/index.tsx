@@ -2,7 +2,7 @@ import { type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Bar, BarChart, Cell, Legend, Line, LineChart, Pie, PieChart, ReferenceDot, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { money, moneyShort, percent } from '@/lib/format'
-import { Card, Tip } from './ui'
+import { Card, Tip } from '@/components/ui'
 
 const AXIS = { fill: '#5C6D6A', fontSize: 11 }
 const PLOT = 'chart-plot h-[220px] w-full min-w-0 overflow-visible'

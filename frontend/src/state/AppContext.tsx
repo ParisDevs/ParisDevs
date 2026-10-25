@@ -1,14 +1,14 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
-import { auditSeed, documents as docsSeed, schedule as scheduleSeed, transactions as txSeed } from '@/data/fixtures'
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { accounts as accountsSeed, auditSeed, documents as docsSeed, schedule as scheduleSeed, transactions as txSeed } from '@/data/fixtures'
 import {
   buildAlerts,
   buildInsights,
   classStatus,
   lastMonth,
-  statementFor,
 } from '@/domain/finance'
-import type { AppConfig, AuditEntry, Document, ScheduleItem, Session, Transaction } from '@/domain/types'
-import { clearSession, loadSnapshot, persist, saveSession, sessionFromEmail } from './store'
+import { statementFromTransactions } from '@/domain/banking'
+import type { Account, AppConfig, AuditEntry, Document, ScheduleItem, Session, StatementImport, Transaction } from '@/domain/types'
+import { applyTheme, clearSession, loadSnapshot, persist, saveSession, sessionFromEmail } from './store'
 
 export type TxFilter = {
   search: string
@@ -40,9 +40,11 @@ type Ctx = {
   period: string
   config: AppConfig
   transactions: Transaction[]
+  accounts: Account[]
   documents: Document[]
   schedule: ScheduleItem[]
   audit: AuditEntry[]
+  imports: StatementImport[]
   login: (email: string, remember?: boolean) => Session
   logout: () => void
   setScope: (scope: string) => void
@@ -57,6 +59,9 @@ type Ctx = {
   addDocument: (doc: Document) => void
   addBill: (item: ScheduleItem) => void
   updateBill: (item: ScheduleItem) => void
+  updateAccount: (id: string, patch: Partial<Account>) => void
+  addAccount: (account: Account) => void
+  addTransactions: (rows: Transaction[], record?: StatementImport) => void
   inviteUserNote: string | null
   setInviteUserNote: (v: string | null) => void
 }
@@ -79,15 +84,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [schedule, setSchedule] = useState<ScheduleItem[]>(scheduleSeed)
   const [inviteUserNote, setInviteUserNote] = useState<string | null>(null)
   const [txFilter, setTxFilterState] = useState<TxFilter>(emptyTxFilter)
+  const [accountPatch, setAccountPatch] = useState<Record<string, Partial<Account>>>(() => persist.read('accountPatch', {}))
+  const [extraAccounts, setExtraAccounts] = useState<Account[]>(() => persist.read('extraAccounts', []))
+  const [extraTx, setExtraTx] = useState<Transaction[]>(() => persist.read('extraTx', []))
+  const [imports, setImports] = useState<StatementImport[]>(() => persist.read('imports', []))
+
+  useEffect(() => {
+    applyTheme(config.theme)
+  }, [config.theme])
+
+  const accounts = useMemo(() => {
+    const extras = extraAccounts.filter((a) => !accountsSeed.some((s) => s.id === a.id))
+    return [...accountsSeed, ...extras].map((a) => ({ ...a, ...accountPatch[a.id] }))
+  }, [accountPatch, extraAccounts])
 
   const transactions = useMemo(
     () =>
-      txSeed.map((t) => ({
+      [...txSeed, ...extraTx].map((t) => ({
         ...t,
         ...overrides[t.id],
         recon: recon[t.id] ?? t.recon,
       })),
-    [overrides, recon],
+    [overrides, recon, extraTx],
   )
 
   const value = useMemo<Ctx>(() => {
@@ -113,9 +131,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       period,
       config,
       transactions,
+      accounts,
       documents,
       schedule,
       audit,
+      imports,
       inviteUserNote,
       setInviteUserNote,
       login: (email, remember = true) => {
@@ -142,7 +162,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       resetTxFilter: () => setTxFilterState(emptyTxFilter),
       saveConfig: (patch) => {
         setConfig((prev) => {
-          const next = { ...prev, ...patch, thresholds: { ...prev.thresholds, ...patch.thresholds } }
+          const next: AppConfig = {
+            ...prev,
+            ...patch,
+            thresholds: { ...prev.thresholds, ...patch.thresholds },
+            notifications: {
+              ...prev.notifications,
+              ...patch.notifications,
+              kinds: { ...prev.notifications.kinds, ...patch.notifications?.kinds },
+            },
+            openFinance: { ...prev.openFinance, ...patch.openFinance },
+            aiApi: { ...prev.aiApi, ...patch.aiApi },
+          }
           persist.write('config', next)
           return next
         })
@@ -184,8 +215,50 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addDocument: (doc) => setDocuments((prev) => [doc, ...prev]),
       addBill: (item) => setSchedule((prev) => [...prev, item]),
       updateBill: (item) => setSchedule((prev) => prev.map((s) => (s.id === item.id ? item : s))),
+      updateAccount: (id, patch) => {
+        setAccountPatch((prev) => {
+          const next = { ...prev, [id]: { ...prev[id], ...patch } }
+          persist.write('accountPatch', next)
+          return next
+        })
+      },
+      addAccount: (account) => {
+        setExtraAccounts((prev) => {
+          const next = [account, ...prev.filter((a) => a.id !== account.id)]
+          persist.write('extraAccounts', next)
+          return next
+        })
+        recordAudit({
+          action: 'Conta bancária conectada',
+          entity: `${account.bank} ${account.number}`,
+          before: 'Desconectada',
+          after: 'Conectada (fluxo simulado)',
+          reason: 'Consentimento de demonstração. Integração Open Finance ainda não operacional.',
+        })
+      },
+      addTransactions: (rows, record) => {
+        setExtraTx((prev) => {
+          const next = [...rows, ...prev]
+          persist.write('extraTx', next)
+          return next
+        })
+        if (record) {
+          setImports((prev) => {
+            const next = [record, ...prev]
+            persist.write('imports', next)
+            return next
+          })
+          recordAudit({
+            action: 'Importação de extrato',
+            entity: record.fileName,
+            before: '',
+            after: `${record.count} lançamento(s) · ${record.status}`,
+            reason: record.errors.join(' ') || `Formato ${record.format.toUpperCase()}`,
+          })
+        }
+      },
     }
-  }, [session, scope, period, txFilter, config, transactions, documents, schedule, audit, overrides, recon, inviteUserNote])
+  }, [session, scope, period, txFilter, config, transactions, accounts, documents, schedule, audit, imports, overrides, recon, inviteUserNote])
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }
@@ -203,9 +276,9 @@ export function useScopedTx() {
 }
 
 export function useDashboardNumbers() {
-  const { scope, period, schedule, transactions, config } = useApp()
-  const st = statementFor(period || lastMonth(), scope)
-  const alerts = buildAlerts(config, transactions, schedule)
+  const { scope, period, schedule, transactions, config, accounts } = useApp()
+  const st = statementFromTransactions(transactions, period || lastMonth(), scope)
+  const alerts = buildAlerts(config, transactions, schedule, accounts)
   const insights = buildInsights(scope, schedule)
   return { st, alerts, insights }
 }

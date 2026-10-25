@@ -11,6 +11,7 @@ import {
 } from '@/data/fixtures'
 import { money, month as monthFmt, percent } from '@/lib/format'
 import type {
+  Account,
   AppAlert,
   AppConfig,
   CashDay,
@@ -51,8 +52,8 @@ export function companyOf(id: string) {
   return companies.find((c) => c.id === id)
 }
 
-export function accountOf(id: string) {
-  return accounts.find((a) => a.id === id)
+export function accountOf(id: string, list: Account[] = accounts) {
+  return list.find((a) => a.id === id)
 }
 
 export function categoryOf(code: string | null) {
@@ -83,7 +84,7 @@ export function categoryBucket(code: string | null) {
   return code
 }
 
-/** Agrupa saídas para o gráfico de barras da conciliação. */
+/** Agrupa saídas para o gráfico de barras da conciliação (categorias generalistas). */
 export function gastoChartGroup(code: string | null) {
   if (!code) return 'outros'
   if (code.startsWith('C.1')) return 'mercadorias'
@@ -93,8 +94,11 @@ export function gastoChartGroup(code: string | null) {
   if (code.startsWith('O.3')) return 'contas'
   if (code.startsWith('O.4')) return 'marketing'
   if (code.startsWith('O.5')) return 'transporte'
+  if (code.startsWith('O.6')) return 'tecnologia'
   if (code.startsWith('F')) return 'financeiro'
-  if (code.startsWith('D')) return 'deducoes'
+  if (code.startsWith('D') || code.startsWith('T')) return 'deducoes'
+  if (code.startsWith('X') || code.startsWith('I')) return 'transferencias'
+  if (code.startsWith('P') || code.startsWith('E')) return 'emprestimos'
   return 'outros'
 }
 
@@ -135,8 +139,8 @@ export function saidaMercadoriasHierarchy(code: string | null) {
   }
 }
 
-export function accountLabel(id: string) {
-  const a = accountOf(id)
+export function accountLabel(id: string, list: Account[] = accounts) {
+  const a = accountOf(id, list)
   return a ? `${a.bank} · ${a.number}` : id
 }
 
@@ -229,9 +233,9 @@ export function statementFor(month: string, scope: string) {
   return statement(monthlyScope(month, scope))
 }
 
-export function balance(scope: string) {
+export function balance(scope: string, list: Account[] = accounts) {
   const ids = companyIds(scope)
-  return accounts.filter((a) => ids.includes(a.companyId)).reduce((s, a) => s + a.balance, 0)
+  return list.filter((a) => ids.includes(a.companyId) && a.status === 'ok' && !a.balanceUnavailable).reduce((s, a) => s + a.balance, 0)
 }
 
 export function addDays(iso: string, n: number) {
@@ -240,7 +244,7 @@ export function addDays(iso: string, n: number) {
   return d.toISOString().slice(0, 10)
 }
 
-export function cashRealized(scope: string): CashDay[] {
+export function cashRealized(scope: string, list: Account[] = accounts): CashDay[] {
   const ids = companyIds(scope)
   const days: string[] = []
   for (let d = '2026-09-01'; d <= TODAY; d = addDays(d, 1)) days.push(d)
@@ -264,7 +268,7 @@ export function cashRealized(scope: string): CashDay[] {
       row.saidas += round(saidas)
     })
   })
-  let closing = balance(scope)
+  let closing = balance(scope, list)
   for (let i = rows.length - 1; i >= 0; i--) {
     const inicial = round(closing - rows[i].entradas + rows[i].saidas)
     rows[i].saldoFinal = round(closing)
@@ -274,10 +278,10 @@ export function cashRealized(scope: string): CashDay[] {
   return rows
 }
 
-export function cashProjected(scope: string, items: ScheduleItem[], horizon = 30): CashDay[] {
+export function cashProjected(scope: string, items: ScheduleItem[], horizon = 30, list: Account[] = accounts): CashDay[] {
   const ids = new Set(companyIds(scope))
   const scoped = items.filter((s) => ids.has(s.companyId))
-  let saldo = balance(scope)
+  let saldo = balance(scope, list)
   const rows: CashDay[] = []
   for (let i = 1; i <= horizon; i++) {
     const date = addDays(TODAY, i)
@@ -322,13 +326,14 @@ export function buildAlerts(
   cfg: AppConfig,
   tx: Transaction[],
   items: ScheduleItem[],
+  accountList: Account[] = accounts,
 ): AppAlert[] {
   const list: AppAlert[] = []
   const lm = lastMonth()
   const pm = prevMonth()
 
   companies.forEach((c) => {
-    const proj = cashProjected(c.id, items)
+    const proj = cashProjected(c.id, items, 30, accountList)
     const negative = proj.filter((d) => (d.saldo ?? 0) < 0)
     if (negative.length) {
       const min = negative.reduce((a, b) => ((b.saldo ?? 0) < (a.saldo ?? 0) ? b : a))
@@ -425,17 +430,17 @@ export function buildAlerts(
     })
   }
 
-  accounts.forEach((a) => {
-    if (a.status === 'ok') return
+  accountList.forEach((a) => {
+    if (a.status === 'ok' && a.connected !== false) return
     const c = companyOf(a.companyId)
     list.push({
       id: `sync-${a.id}`,
       kind: 'integracao',
       group: a.status === 'erro' ? 'critico' : 'informacao',
       companyId: a.companyId,
-      title: `${a.status === 'erro' ? 'Falha de conexão' : 'Sincronização atrasada'} — ${a.bank} ${a.number}`,
+      title: `${a.status === 'erro' ? 'Falha de conexão' : a.connected === false ? 'Instituição desconectada' : 'Sincronização atrasada'} — ${a.bank} ${a.number}`,
       detail: `${a.note ? `${a.note} ` : ''}Última sincronização em ${a.lastSync.slice(0, 16).replace('T', ' ')} (${c?.code}).`,
-      link: '/configuracoes/open-finance',
+      link: '/conexoes',
     })
   })
 

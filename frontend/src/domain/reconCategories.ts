@@ -35,17 +35,20 @@ export const GASTO_BAR_GREENS = [
 export type GastoGroupMeta = { label: string; Icon: LucideIcon }
 
 export const GASTO_GROUP_META: Record<string, GastoGroupMeta> = {
-  mercadorias: { label: 'Alimentação', Icon: UtensilsCrossed },
-  outros: { label: 'Outros', Icon: Sparkles },
-  ocupacao: { label: 'Ocupação', Icon: Home },
-  folha: { label: 'Folha de pagamento', Icon: User },
-  transporte: { label: 'Transporte', Icon: Car },
-  manutencao: { label: 'Manutenção', Icon: Drama },
-  contas: { label: 'Contas', Icon: Phone },
-  marketing: { label: 'Marketing', Icon: GraduationCap },
-  deducoes: { label: 'Deduções', Icon: HeartPulse },
-  financeiro: { label: 'Tarifas', Icon: Coins },
-  admin: { label: 'Administrativo', Icon: Building2 },
+  mercadorias: { label: 'Alimentação e viagem', Icon: UtensilsCrossed },
+  outros: { label: 'Não classificado', Icon: Sparkles },
+  ocupacao: { label: 'Aluguel e ocupação', Icon: Home },
+  folha: { label: 'Folha e encargos', Icon: User },
+  transporte: { label: 'Outras despesas', Icon: Car },
+  manutencao: { label: 'Fornecedores e serviços', Icon: Drama },
+  contas: { label: 'Outras despesas', Icon: Phone },
+  marketing: { label: 'Marketing e publicidade', Icon: GraduationCap },
+  deducoes: { label: 'Impostos e tributos', Icon: HeartPulse },
+  financeiro: { label: 'Tarifas bancárias', Icon: Coins },
+  admin: { label: 'Outras despesas', Icon: Building2 },
+  tecnologia: { label: 'Tecnologia e software', Icon: Phone },
+  transferencias: { label: 'Investimentos e transferências', Icon: Coins },
+  emprestimos: { label: 'Empréstimos e financiamentos', Icon: Building2 },
 }
 
 export type GastoCategoriaRow = {
@@ -85,17 +88,7 @@ export function txInGastoGroup(t: Transaction, groupId: string) {
 type SubDef = { slug: string; label: string; match: (code: string | null) => boolean }
 
 const MERCADORIAS_SUBS: SubDef[] = [
-  { slug: 'bebidas', label: 'Bebidas', match: (c) => !!c?.startsWith('C.1.2') },
-  { slug: 'hortifruti', label: 'Hortifruti', match: (c) => !!c?.startsWith('C.1.1.1') },
-  { slug: 'acougue', label: 'Açougue', match: (c) => !!c?.startsWith('C.1.1.2') },
-  { slug: 'padaria', label: 'Padaria', match: (c) => !!c?.startsWith('C.1.1.3') },
-  {
-    slug: 'alimentos',
-    label: 'Alimentos',
-    match: (c) =>
-      c === 'C.1.1'
-      || (!!c?.startsWith('C.1.1') && !c.startsWith('C.1.1.1') && !c.startsWith('C.1.1.2') && !c.startsWith('C.1.1.3')),
-  },
+  { slug: 'geral', label: 'Alimentação', match: (c) => !!c?.startsWith('C.1') },
 ]
 
 const GROUP_CHART_PARENT: Record<string, string> = {
@@ -104,8 +97,11 @@ const GROUP_CHART_PARENT: Record<string, string> = {
   contas: 'O.3',
   marketing: 'O.4',
   transporte: 'O.5',
+  tecnologia: 'O.6',
   financeiro: 'F',
   deducoes: 'D',
+  transferencias: 'X',
+  emprestimos: 'P',
 }
 
 function slugFromCode(code: string) {
@@ -139,30 +135,8 @@ export function getLeavesForSub(groupId: string, subSlug: string): LeafDef[] {
   const sub = findSub(groupId, subSlug)
   if (!sub) return []
 
-  if (groupId === 'mercadorias' && subSlug === 'bebidas') {
-    return chartOfAccounts
-      .filter((c) => c.parent === 'C.1.2')
-      .map((c) => ({
-        slug: slugFromCode(c.code),
-        label: c.name,
-        code: c.code,
-        match: (code) => code === c.code || !!code?.startsWith(`${c.code}.`),
-      }))
-  }
-
   if (groupId === 'mercadorias') {
-    const prefix =
-      subSlug === 'hortifruti' ? 'C.1.1.1'
-      : subSlug === 'acougue' ? 'C.1.1.2'
-        : subSlug === 'padaria' ? 'C.1.1.3'
-          : 'C.1.1'
-    const node = chartOfAccounts.find((c) => c.code === prefix)
-    if (node && subSlug === 'alimentos') {
-      return [{ slug: slugFromCode(node.code), label: node.name, code: node.code, match: (c) => c === node.code }]
-    }
-    if (node) {
-      return [{ slug: slugFromCode(node.code), label: node.name, code: node.code, match: (c) => sub.match(c) }]
-    }
+    return [{ slug: 'geral', label: 'Alimentação', code: 'C.1', match: (code) => !!code?.startsWith('C.1') }]
   }
 
   const parentCode = GROUP_CHART_PARENT[groupId]

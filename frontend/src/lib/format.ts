@@ -40,6 +40,11 @@ export const dateTime = (iso: string) => {
   return time ? `${date(iso)} ${time}` : date(iso)
 }
 
+export const dateTimeMark = (iso: string) => {
+  const time = iso.slice(11, 16)
+  return time ? `${date(iso)} • ${time}` : date(iso)
+}
+
 const MONTHS = [
   'janeiro',
   'fevereiro',

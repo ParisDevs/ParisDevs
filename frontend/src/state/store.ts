@@ -86,7 +86,20 @@ export function loadConfig(): AppConfig {
     ...stored,
     thresholds: { ...defaultConfig.thresholds, ...stored.thresholds },
     financialRules: stored.financialRules ?? defaultConfig.financialRules,
+    notifications: {
+      ...defaultConfig.notifications,
+      ...stored.notifications,
+      kinds: { ...defaultConfig.notifications.kinds, ...stored.notifications?.kinds },
+    },
+    openFinance: { ...defaultConfig.openFinance, ...stored.openFinance },
+    aiApi: { ...defaultConfig.aiApi, ...stored.aiApi },
+    theme: stored.theme === 'dark' ? 'dark' : 'light',
   }
+}
+
+export function applyTheme(theme: AppConfig['theme']) {
+  if (typeof document === 'undefined') return
+  document.documentElement.dataset.theme = theme
 }
 
 export type AppSnapshot = {

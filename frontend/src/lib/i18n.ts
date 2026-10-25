@@ -22,9 +22,10 @@ export function saveLang(lang: Lang) {
 
 export const copy = {
   pt: {
-    platform: 'Plataforma ParisDevs',
+    platform: 'Plataforma Paris Devs',
     enter: 'Entrar',
     sso: 'Entrar com SSO',
+    ssoHint: 'O provedor de identidade ainda não está configurado.',
     orLocal: 'Ou acesse com usuário e senha',
     user: 'Usuário',
     password: 'Senha',
@@ -48,9 +49,10 @@ export const copy = {
     recoverOk: 'Código enviado. Verifique sua caixa de entrada.',
   },
   en: {
-    platform: 'ParisDevs Platform',
+    platform: 'Paris Devs Platform',
     enter: 'Sign in',
     sso: 'Sign in with SSO',
+    ssoHint: 'The identity provider is not configured yet.',
     orLocal: 'Or sign in with username and password',
     user: 'Username',
     password: 'Password',

@@ -1,35 +1,37 @@
 @import 'tailwindcss';
 
-/* Linguagem visual da Avenza Finance (app.css):
-   verde esmeralda, neutros frios, sidebar branca, busca no topo. */
+/* Sistema interno: sidebar floresta, fundo sage, cards brancos, ouro só na marca. */
 
 @theme {
-  --color-fundo: #f7f9f8;
+  --color-fundo: #f3f7f5;
   --color-superficie: #ffffff;
-  --color-superficie-2: #fbfcfc;
-  --color-menu: #ffffff;
+  --color-superficie-2: #f7faf8;
+  --color-menu: #062921;
+  --color-menu-hover: #0c3a30;
+  --color-menu-active: #dceae4;
+  --color-ouro: #c9b07a;
   --color-primaria: #0b5d4e;
-  --color-primaria-escura: #094c40;
-  --color-secundaria: #eaf3f0;
-  --color-texto: #0a1a17;
-  --color-texto-secundario: #5c6d6a;
-  --color-faint: #8b9b98;
-  --color-borda: #e8eceb;
-  --color-borda-forte: #d9e0de;
+  --color-primaria-escura: #08483d;
+  --color-secundaria: #e7f1ed;
+  --color-texto: #0d1f1b;
+  --color-texto-secundario: #5a6e69;
+  --color-faint: #8a9b96;
+  --color-borda: #e3ebe7;
+  --color-borda-forte: #d0dcd6;
   --color-sucesso: #0e7c56;
   --color-alerta: #fcf4e3;
   --color-alerta-texto: #9a6b08;
   --color-erro: #b42318;
   --color-informacao: #1f6f8b;
-  --color-destaque: #eaf3f0;
-  --color-brand-line: #cbe0da;
+  --color-destaque: #e7f1ed;
+  --color-brand-line: #c5d8d0;
 
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
-  --radius-campo: 6px;
-  --radius-card: 14px;
-  --shadow-card: 0 1px 2px rgba(10, 26, 23, 0.04);
+  --radius-campo: 8px;
+  --radius-card: 16px;
+  --shadow-card: 0 1px 2px rgba(13, 31, 27, 0.04);
 }
 
 @layer base {
@@ -41,6 +43,11 @@
 
   html {
     -webkit-font-smoothing: antialiased;
+  }
+
+  html.scroll-smooth {
+    scroll-behavior: smooth;
+    scroll-padding-top: 72px;
   }
 
   body {
@@ -74,11 +81,20 @@
   }
 }
 
-.t-h1 {
-  font-size: 24px;
-  line-height: 1.2;
+.t-kicker {
+  font-size: 11px;
+  line-height: 1.3;
   font-weight: 600;
-  letter-spacing: -0.025em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primaria);
+}
+
+.t-h1 {
+  font-size: 32px;
+  line-height: 1.12;
+  font-weight: 600;
+  letter-spacing: -0.035em;
 }
 
 .t-h2 {
@@ -115,9 +131,9 @@
 
 .t-kpi {
   font-size: 26px;
-  line-height: 1.05;
+  line-height: 1.1;
   font-weight: 600;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
@@ -131,6 +147,27 @@
 .num {
   font-variant-numeric: tabular-nums;
   font-family: var(--font-mono);
+}
+
+.nav-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.32) transparent;
+}
+
+.nav-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.nav-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.nav-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.32);
+  border-radius: 99px;
 }
 
 .sr-only {
@@ -221,4 +258,28 @@
 .chart-plot-bar .recharts-surface:focus,
 .chart-plot-bar .recharts-surface:focus-visible {
   outline: none !important;
+}
+
+html[data-theme='dark'] {
+  --color-fundo: #0c1412;
+  --color-superficie: #14201c;
+  --color-superficie-2: #1a2824;
+  --color-menu: #041c17;
+  --color-menu-hover: #0a2e26;
+  --color-menu-active: #1e3d35;
+  --color-texto: #e8f0ed;
+  --color-texto-secundario: #9aada8;
+  --color-faint: #7d8f8b;
+  --color-borda: #243530;
+  --color-borda-forte: #314640;
+  --color-secundaria: #1c2d29;
+  --color-destaque: #1c2d29;
+  --color-brand-line: #2f4a44;
+  --color-alerta: #3a3118;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+html[data-theme='dark'] body {
+  background-color: var(--color-fundo);
+  color: var(--color-texto);
 }
