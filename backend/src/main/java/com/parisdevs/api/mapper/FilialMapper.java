@@ -2,6 +2,7 @@ package com.parisdevs.api.mapper;
 
 import com.parisdevs.api.dto.FilialRequestDto;
 import com.parisdevs.api.dto.FilialResponseDto;
+import com.parisdevs.api.dto.FilialResponseSimplesDto;
 import com.parisdevs.api.entity.Filial;
 
 import java.util.ArrayList;
@@ -48,5 +49,18 @@ public class FilialMapper {
             filialResponseDtos.add(filialResponseDto);
         }
         return filialResponseDtos;
+    }
+
+    public static FilialResponseSimplesDto toResponseSimplesDto (Filial filial){
+        if (filial == null){
+            return null;
+        }
+
+        FilialResponseSimplesDto filialResponseSimplesDto = new FilialResponseSimplesDto();
+
+        filialResponseSimplesDto.setIdFilial(filial.getIdFilial());
+        filialResponseSimplesDto.setRazaoSocial(filial.getRazaoSocial());
+
+        return filialResponseSimplesDto;
     }
 }

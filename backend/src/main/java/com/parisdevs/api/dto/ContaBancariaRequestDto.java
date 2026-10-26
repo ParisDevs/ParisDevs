@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 
 public class ContaBancariaRequestDto {
 
-
+    @NotNull
     private Integer fkFilial;
 
     @NotBlank
