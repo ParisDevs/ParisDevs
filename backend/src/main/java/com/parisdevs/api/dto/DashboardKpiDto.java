@@ -1,4 +1,14 @@
+
+
 package com.parisdevs.api.dto;
 
-public class DashboardKpiDto {
+import java.math.BigDecimal;
+
+public record DashboardKpiDto(
+        BigDecimal saldoConsolidado,
+        BigDecimal entradas,
+        BigDecimal saidas,
+        BigDecimal resultado
+) {
 }
+

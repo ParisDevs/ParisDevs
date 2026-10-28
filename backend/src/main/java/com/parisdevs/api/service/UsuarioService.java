@@ -58,8 +58,13 @@ public class UsuarioService {
         return usuarioRepository.save(usuario);
     }
 
-    public UsuarioResponseDto login(UsuarioLoginDto request){
+    public UsuarioResponseDto login(UsuarioLoginDto request) {
+        System.out.println("E-mail recebido: [" + request.getEmail() + "]");
+
         Usuario usuario = usuarioRepository.findByEmail(request.getEmail());
+
+        System.out.println("Usuário encontrado: " + (usuario != null));
+
         return UsuarioMapper.toResponseDto(usuario);
     }
 

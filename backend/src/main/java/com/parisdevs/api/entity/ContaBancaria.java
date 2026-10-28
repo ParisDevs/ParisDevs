@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
+import java.math.BigDecimal;
+
 @Entity
 public class ContaBancaria {
 
@@ -21,11 +23,13 @@ public class ContaBancaria {
     private String cpfCnpjTitular;
     private String nomeTitular;
     private Boolean ativo;
+    @Column(name = "saldo", precision = 15, scale = 2)
+    private BigDecimal saldo;
 
     public ContaBancaria() {
     }
 
-    public ContaBancaria(Long idContaBancaria, Filial filial, String codigoBanco, String nomeInstituicao, String agencia, String agenciaDigito, String numeroConta, String tipoConta, String cpfCnpjTitular, String nomeTitular, Boolean ativo) {
+    public ContaBancaria(Long idContaBancaria, Filial filial, String codigoBanco, String nomeInstituicao, String agencia, String agenciaDigito, String numeroConta, String tipoConta, String cpfCnpjTitular, String nomeTitular, Boolean ativo, BigDecimal saldo) {
         this.idContaBancaria = idContaBancaria;
         this.filial = filial;
         this.codigoBanco = codigoBanco;
@@ -37,6 +41,7 @@ public class ContaBancaria {
         this.cpfCnpjTitular = cpfCnpjTitular;
         this.nomeTitular = nomeTitular;
         this.ativo = ativo;
+        this.saldo = saldo;
     }
 
     public Long getIdContaBancaria() {
@@ -125,5 +130,13 @@ public class ContaBancaria {
 
     public void setAtivo(Boolean ativo) {
         this.ativo = ativo;
+    }
+
+    public BigDecimal getSaldo() {
+        return saldo;
+    }
+
+    public void setSaldo(BigDecimal saldo) {
+        this.saldo = saldo;
     }
 }

@@ -16,6 +16,7 @@ import java.util.List;
 @Tag(name = "Filiais")
 @RestController
 @RequestMapping("/filiais")
+@CrossOrigin(origins = "http://localhost:5174")
 public class FilialController {
 
     private final FilialService filialService;

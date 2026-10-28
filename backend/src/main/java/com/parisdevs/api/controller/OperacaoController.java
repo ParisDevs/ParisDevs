@@ -15,6 +15,7 @@ import java.util.List;
 @Tag(name = "Operações")
 @RestController
 @RequestMapping("/operacoes")
+@CrossOrigin(origins = "http://localhost:5174")
 public class OperacaoController {
 
     private final OperacaoService operacaoService;

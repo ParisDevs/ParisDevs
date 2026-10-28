@@ -15,6 +15,7 @@ import java.util.List;
 @Tag(name = "Conta Bancaria")
 @RestController
 @RequestMapping("/contasBancarias")
+@CrossOrigin(origins = "http://localhost:5174")
 public class ContaBancariaController {
 
     private final ContaBancariaService contaBancariaService;

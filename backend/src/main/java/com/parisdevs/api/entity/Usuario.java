@@ -15,12 +15,15 @@ public class Usuario {
     private Integer id;
 
     private String nome;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cargo")
     private Cargo cargo;
     private String email;
     private String senha;
 
     @ManyToOne
-    @JoinColumn(name = "fkFilial")
+    @JoinColumn(name = "filial_id")
     private Filial filial;
 
     public Usuario() {
