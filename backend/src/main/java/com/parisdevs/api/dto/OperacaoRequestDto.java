@@ -26,7 +26,7 @@ public class OperacaoRequestDto {
     @NotNull
     private LocalDateTime dtHora;
 
-   @NotNull
+    @NotNull
     private Long idContaBancaria;
 
     public OperacaoRequestDto(Double valorOperacao, TipoOperacao tipoOperacao, String razaoSocial, String categoria, LocalDateTime dtHora, Long idContaBancaria) {
