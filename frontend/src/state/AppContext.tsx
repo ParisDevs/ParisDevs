@@ -34,6 +34,17 @@ export const emptyTxFilter: TxFilter = {
   tipo: '',
 }
 
+export type Usuario = {
+  id: number
+  filial: {
+    idFilial: number
+    razaoSocial: string
+  } | null
+  nome: string
+  cargo: string
+  email: string
+}
+
 type Ctx = {
   session: Session | null
   scope: string
@@ -64,11 +75,14 @@ type Ctx = {
   addTransactions: (rows: Transaction[], record?: StatementImport) => void
   inviteUserNote: string | null
   setInviteUserNote: (v: string | null) => void
+  usuario: Usuario | null
+  setUsuario: (usuario: Usuario | null) => void
 }
 
 const AppContext = createContext<Ctx | null>(null)
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const [usuario, setUsuario] = useState<Usuario | null>(null)
   const snap = loadSnapshot()
   const [session, setSession] = useState<Session | null>(snap.session)
   const [scope, setScopeState] = useState(snap.scope)
@@ -126,6 +140,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
 
     return {
+      usuario,
+      setUsuario,
       session,
       scope,
       period,
@@ -148,6 +164,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         clearSession()
         persist.remove('scope')
         setSession(null)
+        setUsuario(null)
       },
       setScope: (s) => {
         persist.write('scope', s)
@@ -258,7 +275,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       },
     }
-  }, [session, scope, period, txFilter, config, transactions, accounts, documents, schedule, audit, imports, overrides, recon, inviteUserNote])
+  }, [session, usuario, scope, period, txFilter, config, transactions, accounts, documents, schedule, audit, imports, overrides, recon, inviteUserNote])
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }

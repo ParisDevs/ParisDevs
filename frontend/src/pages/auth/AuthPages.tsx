@@ -4,7 +4,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Building2 } from 'lucide-react'
 import { Banner, Button, Card, Field, Input } from '@/components/ui'
 import { useAuthCopy } from '@/components/layout/AuthLayout'
-import { useApp } from '@/state/AppContext'
+import { useApp, type Usuario } from '@/state/AppContext'
+//import {  } from '@/state/AppContext'
 import api from '../../components/services/api'
 
 function AuthCard({
@@ -35,7 +36,7 @@ function AuthCard({
 }
 
 export function LoginPage() {
-  const { login } = useApp()
+  const { login, setUsuario } = useApp()
   const { t } = useAuthCopy()
   const navigate = useNavigate()
   const [params] = useSearchParams()
@@ -68,9 +69,12 @@ export function LoginPage() {
       email: email.trim(),
       senha: password,
     })
-      .then((resposta: { data: any }) => {
-        console.log('Login realizado:', resposta.data)
-
+      .then((resposta) => {
+        console.log('Resposta completa:', resposta)
+        console.log('Dados:', resposta.data)
+        console.log('JSON:', JSON.stringify(resposta.data))
+        
+        setUsuario(resposta.data)
         login(email.trim(), stay)
         navigate('/dashboard')
       })
