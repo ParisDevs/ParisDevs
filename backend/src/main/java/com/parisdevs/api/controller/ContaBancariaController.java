@@ -5,12 +5,14 @@ import com.parisdevs.api.dto.ContaBancariaResponseDto;
 import com.parisdevs.api.entity.ContaBancaria;
 import com.parisdevs.api.mapper.ContaBancariaMapper;
 import com.parisdevs.api.service.ContaBancariaService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "Conta Bancaria")
 @RestController
 @RequestMapping("/contasBancarias")
 public class ContaBancariaController {
