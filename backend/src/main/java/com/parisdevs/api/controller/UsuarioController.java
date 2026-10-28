@@ -1,5 +1,6 @@
 package com.parisdevs.api.controller;
 
+import com.parisdevs.api.dto.UsuarioLoginDto;
 import com.parisdevs.api.dto.UsuarioRequestDto;
 import com.parisdevs.api.dto.UsuarioResponseDto;
 import com.parisdevs.api.entity.Usuario;
@@ -16,6 +17,7 @@ import java.util.List;
 @Tag(name = "Usuarios")
 @RestController
 @RequestMapping("/usuarios")
+@CrossOrigin(origins = "http://localhost:5174")
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
@@ -24,6 +26,7 @@ public class UsuarioController {
         this.usuarioService = usuarioService;
     }
 
+    //Gets
     @GetMapping
     public ResponseEntity<List<UsuarioResponseDto>> listar() {
         List<Usuario> usuarios = usuarioService.listarUsuarios();
@@ -36,6 +39,8 @@ public class UsuarioController {
         return ResponseEntity.status(200).body(UsuarioMapper.toResponseDto(usuario));
     }
 
+
+    //Posts
     @PostMapping
     public ResponseEntity<UsuarioResponseDto> cadastrar(@Valid @RequestBody UsuarioRequestDto usuarioRequestDto) {
         Usuario usuario = UsuarioMapper.toEntity(usuarioRequestDto);
@@ -43,6 +48,12 @@ public class UsuarioController {
         return ResponseEntity.status(201).body(UsuarioMapper.toResponseDto(usuarioSalvo));
     }
 
+    @PostMapping("/login")
+    public ResponseEntity<UsuarioResponseDto> login(@RequestBody UsuarioLoginDto request){
+        return ResponseEntity.status(200).body(usuarioService.login(request));
+    }
+
+    //Puts
     @PutMapping("/{id}")
     public ResponseEntity<UsuarioResponseDto> atualizar(@PathVariable Integer id, @Valid @RequestBody UsuarioRequestDto usuarioRequestDto) {
         Usuario usuario = UsuarioMapper.toEntity(usuarioRequestDto);
@@ -50,6 +61,7 @@ public class UsuarioController {
         return ResponseEntity.status(200).body(UsuarioMapper.toResponseDto(usuarioAtualizado));
     }
 
+    //Delets
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(@PathVariable Integer id) {
         usuarioService.deletarPorid(id);
