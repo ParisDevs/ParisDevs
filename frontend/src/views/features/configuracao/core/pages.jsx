@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Camera, Pencil, Trash2 } from 'lucide-react'
 import { Badge, Banner, Button, Card, Empty, Field, Input, Kpi, Modal, PageHeader, Select, Table, Td, Kv, Toast } from '@/views/ui'
-import { CARGOS, cargoLabel } from '@/models/domain/usuario'
+import { CARGOS, cargoLabel, fotoSrc } from '@/models/domain/usuario'
 import { PERMISSION_CARGOS, PERMISSION_MODULES, permissionLabel, permissionLevel } from '@/models/domain/configuracao'
-import { initials } from '@/lib/format'
+import { UserAvatar } from '@/views/components/UserAvatar'
 import { useAppViewModel } from '@/viewmodels/AppViewModel'
 import { useUsuariosViewModel } from '@/viewmodels/configuracao/useUsuariosViewModel'
 import { useConfiguracaoViewModel } from '@/viewmodels/configuracao/useConfiguracaoViewModel'
@@ -25,7 +25,7 @@ function cargoTone(cargo) {
 }
 
 export function ConfigHomePage() {
-  const { nome, email, cargoNome, filialNome, sections } = useConfiguracaoViewModel()
+  const { nome, email, foto, cargoNome, filialNome, sections } = useConfiguracaoViewModel()
   return (
     <div className="space-y-6">
       <PageHeader
@@ -35,9 +35,7 @@ export function ConfigHomePage() {
       />
       <Card className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primaria text-[12px] font-bold text-white">
-            {initials(nome || email || 'U')}
-          </span>
+          <UserAvatar src={fotoSrc(foto)} name={nome || email || 'U'} size={40} />
           <div className="min-w-0">
             <p className="t-h3 truncate">{nome || '—'}</p>
             <p className="t-apoio truncate text-texto-secundario">{email || '—'}</p>
@@ -81,6 +79,7 @@ export function PerfilPage() {
     toast,
     saving,
     patchForm,
+    escolherFoto,
     saveForm,
   } = usePerfilViewModel()
 
@@ -89,17 +88,30 @@ export function PerfilPage() {
       <PageHeader
         kicker="Configuração"
         title="Meu perfil"
-        subtitle="Nome e e-mail no cadastro. Cargo e empresa não mudam aqui."
+        subtitle="Nome, e-mail e foto no cadastro. Cargo e empresa não mudam aqui."
       />
       <ConfigCrumbs current="Meu perfil" />
       <Card className="max-w-xl space-y-4">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primaria text-[12px] font-bold text-white">
-            {initials(nomeExibido || emailExibido || 'U')}
-          </span>
+          <label className="relative inline-flex cursor-pointer">
+            <UserAvatar src={fotoSrc(form.foto)} name={nomeExibido || emailExibido || 'U'} size={56} />
+            <span className="absolute right-0 bottom-0 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primaria text-white">
+              <Camera size={12} />
+            </span>
+            <input
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={(e) => {
+                escolherFoto(e.target.files?.[0])
+                e.target.value = ''
+              }}
+            />
+          </label>
           <div className="min-w-0">
             <p className="t-h3 truncate">{nomeExibido || '—'}</p>
             <p className="t-apoio truncate text-texto-secundario">{emailExibido || '—'}</p>
+            <p className="t-apoio mt-1 text-faint">Clique na foto para alterar. Salve para gravar.</p>
           </div>
         </div>
         {erro ? <p className="t-body text-erro">{erro}</p> : null}

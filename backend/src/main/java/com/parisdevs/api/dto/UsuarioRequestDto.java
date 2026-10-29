@@ -32,6 +32,9 @@ public class UsuarioRequestDto {
     @Size(min = 8, max = 45, message = "A senha deve ter entre 8 e 45 caracteres")
     private String senha;
 
+    @Schema(description = "Foto do perfil (URL pública ou data URL em JPEG)", example = "/avatars/carlos.jpg")
+    private String foto;
+
     public UsuarioRequestDto() {
     }
 
@@ -81,5 +84,13 @@ public class UsuarioRequestDto {
 
     public void setSenha(String senha) {
         this.senha = senha;
+    }
+
+    public String getFoto() {
+        return foto;
+    }
+
+    public void setFoto(String foto) {
+        this.foto = foto;
     }
 }

@@ -19,6 +19,7 @@ import {
   sessionFromUsuario,
 } from '@/models/session'
 import { listarFiliais } from '@/models/api/filialService'
+import { buscarUsuarioPorId } from '@/models/api/usuarioService'
 import { currentMonth, lastTwelveMonths } from '@/lib/period'
 
 
@@ -117,6 +118,25 @@ export function AppViewModelProvider({ children }) {
   useEffect(() => {
     applyTheme(config.theme)
   }, [config.theme])
+
+  useEffect(() => {
+    if (!usuario?.id) return
+    let ativo = true
+    buscarUsuarioPorId(usuario.id)
+      .then((dto) => {
+        if (!ativo || !dto?.id) return
+        const remember = persist.read('usuario', null) != null || persist.read('token', null) != null
+        const next = sessionFromUsuario(dto)
+        saveUsuario(dto, remember)
+        saveSession(next, remember)
+        setUsuario(dto)
+        setSession(next)
+      })
+      .catch(() => {})
+    return () => {
+      ativo = false
+    }
+  }, [usuario?.id])
 
   const recarregarFiliais = useCallback(async (opcoes = {}) => {
     if (!usuario) {
@@ -219,15 +239,6 @@ export function AppViewModelProvider({ children }) {
       atualizarSessaoUsuario: (nextUsuario) => {
         if (!nextUsuario?.id) return
         const remember = persist.read('usuario', null) != null || persist.read('token', null) != null
-        const next = sessionFromUsuario(nextUsuario)
-        saveUsuario(nextUsuario, remember)
-        saveSession(next, remember)
-        setUsuario(nextUsuario)
-        setSession(next)
-      },
-      atualizarSessaoUsuario: (nextUsuario) => {
-        if (!nextUsuario?.id) return
-        const remember = persist.read('token', null) != null || persist.read('usuario', null) != null
         const next = sessionFromUsuario(nextUsuario)
         saveUsuario(nextUsuario, remember)
         saveSession(next, remember)

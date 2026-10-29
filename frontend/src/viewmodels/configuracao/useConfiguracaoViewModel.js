@@ -33,6 +33,7 @@ export function useConfiguracaoViewModel() {
   const admin = session?.role === 'administrador'
   const nome = usuario?.nome ?? session?.name ?? ''
   const email = usuario?.email ?? session?.email ?? ''
+  const foto = usuario?.foto ?? ''
   const cargo = usuario?.cargo ?? ''
   const filialNome = usuario?.filial?.razaoSocial ?? ''
 
@@ -53,6 +54,7 @@ export function useConfiguracaoViewModel() {
     admin,
     nome,
     email,
+    foto,
     cargo,
     cargoNome: cargoLabel(cargo),
     filialNome,

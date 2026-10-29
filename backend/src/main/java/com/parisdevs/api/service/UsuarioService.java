@@ -80,6 +80,9 @@ public class UsuarioService {
         if (dto.getSenha() == null || dto.getSenha().isBlank()) {
             usuario.setSenha(persistido.getSenha());
         }
+        if (dto.getFoto() == null) {
+            usuario.setFoto(persistido.getFoto());
+        }
         return usuarioRepository.save(usuario);
     }
 

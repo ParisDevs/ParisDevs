@@ -11,6 +11,7 @@ public class UsuarioResponseDto {
     private String nome;
     private Cargo cargo;
     private String email;
+    private String foto;
 
     public UsuarioResponseDto() {
     }
@@ -21,6 +22,7 @@ public class UsuarioResponseDto {
         this.nome = nome;
         this.cargo = cargo;
         this.email = email;
+        this.foto = null;
     }
 
     public Integer getId() {
@@ -61,5 +63,13 @@ public class UsuarioResponseDto {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getFoto() {
+        return foto;
+    }
+
+    public void setFoto(String foto) {
+        this.foto = foto;
     }
 }

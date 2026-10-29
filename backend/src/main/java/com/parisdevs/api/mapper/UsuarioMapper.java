@@ -20,6 +20,7 @@ public class UsuarioMapper {
         usuario.setCargo(usuarioRequestDto.getCargo());
         usuario.setEmail(usuarioRequestDto.getEmail());
         usuario.setSenha(usuarioRequestDto.getSenha());
+        usuario.setFoto(usuarioRequestDto.getFoto());
         return usuario;
     }
 
@@ -33,6 +34,7 @@ public class UsuarioMapper {
         usuarioResponseDto.setNome(usuario.getNome());
         usuarioResponseDto.setCargo(usuario.getCargo());
         usuarioResponseDto.setEmail(usuario.getEmail());
+        usuarioResponseDto.setFoto(usuario.getFoto());
 
         if (usuario.getFilial() != null) {
             FilialResponseSimplesDto filialSimplesDto = new FilialResponseSimplesDto();

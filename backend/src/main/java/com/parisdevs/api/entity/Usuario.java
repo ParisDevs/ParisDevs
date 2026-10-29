@@ -22,6 +22,9 @@ public class Usuario {
     private String email;
     private String senha;
 
+    @Column(columnDefinition = "TEXT")
+    private String foto;
+
     @ManyToOne
     @JoinColumn(name = "filial_id")
     private Filial filial;
@@ -36,6 +39,7 @@ public class Usuario {
         this.email = email;
         this.senha = senha;
         this.filial = filial;
+        this.foto = null;
     }
 
     public Integer getId() {
@@ -76,6 +80,14 @@ public class Usuario {
 
     public void setSenha(String senha) {
         this.senha = senha;
+    }
+
+    public String getFoto() {
+        return foto;
+    }
+
+    public void setFoto(String foto) {
+        this.foto = foto;
     }
 
     public Filial getFilial() {

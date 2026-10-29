@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { atualizarUsuario, buscarUsuarioPorId } from '@/models/api/usuarioService'
-import { cargoLabel } from '@/models/domain/usuario'
+import { cargoLabel, lerFotoArquivo } from '@/models/domain/usuario'
 import { useAppViewModel } from '@/viewmodels/AppViewModel'
 
 function filialIdOf(usuario) {
@@ -22,6 +22,7 @@ export function usePerfilViewModel() {
   const [form, setForm] = useState({
     nome: usuario?.nome ?? '',
     email: usuario?.email ?? '',
+    foto: usuario?.foto ?? '',
   })
   const [cargo, setCargo] = useState(usuario?.cargo ?? '')
   const [filialNome, setFilialNome] = useState(usuario?.filial?.razaoSocial ?? '')
@@ -41,7 +42,7 @@ export function usePerfilViewModel() {
       try {
         const dto = await buscarUsuarioPorId(usuario.id)
         if (!ativo || !dto?.id) return
-        setForm({ nome: dto.nome ?? '', email: dto.email ?? '' })
+        setForm({ nome: dto.nome ?? '', email: dto.email ?? '', foto: dto.foto ?? '' })
         setCargo(dto.cargo ?? '')
         setFilialNome(dto.filial?.razaoSocial ?? '')
         setIdFilial(filialIdOf(dto))
@@ -84,9 +85,14 @@ export function usePerfilViewModel() {
         email: form.email.trim(),
         cargo,
         idFilial,
+        foto: form.foto || null,
       })
       atualizarSessaoUsuario(dto)
-      setForm({ nome: dto.nome ?? form.nome, email: dto.email ?? form.email })
+      setForm({
+        nome: dto.nome ?? form.nome,
+        email: dto.email ?? form.email,
+        foto: dto.foto ?? form.foto,
+      })
       setCargo(dto.cargo ?? cargo)
       setFilialNome(dto.filial?.razaoSocial ?? filialNome)
       setIdFilial(filialIdOf(dto) ?? idFilial)
@@ -95,6 +101,17 @@ export function usePerfilViewModel() {
       setFormErro(err.message || 'Não foi possível salvar o perfil.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function escolherFoto(file) {
+    if (!file) return
+    setFormErro('')
+    try {
+      const foto = await lerFotoArquivo(file)
+      patchForm('foto', foto)
+    } catch (err) {
+      setFormErro(err.message || 'Não foi possível ler a foto.')
     }
   }
 
@@ -113,6 +130,7 @@ export function usePerfilViewModel() {
     toast,
     saving,
     patchForm,
+    escolherFoto,
     saveForm,
   }
 }

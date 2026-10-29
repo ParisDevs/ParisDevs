@@ -11,6 +11,44 @@ export function cargoLabel(cargo) {
   return CARGO_LABELS[cargo] || cargo || '—'
 }
 
+export function fotoSrc(foto) {
+  return String(foto ?? '').trim()
+}
+
+export function lerFotoArquivo(file) {
+  const maxBytes = 2 * 1024 * 1024
+  if (!file) return Promise.reject(new Error('Selecione uma imagem.'))
+  if (!String(file.type || '').startsWith('image/')) {
+    return Promise.reject(new Error('Envie um arquivo de imagem.'))
+  }
+  if (file.size > maxBytes) {
+    return Promise.reject(new Error('A foto deve ter no máximo 2 MB.'))
+  }
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = () => reject(new Error('Não foi possível ler a imagem.'))
+    reader.onload = () => {
+      const dataUrl = String(reader.result || '')
+      const img = new Image()
+      img.onload = () => {
+        const size = 256
+        const canvas = document.createElement('canvas')
+        canvas.width = size
+        canvas.height = size
+        const ctx = canvas.getContext('2d')
+        const min = Math.min(img.width, img.height) || 1
+        const sx = (img.width - min) / 2
+        const sy = (img.height - min) / 2
+        ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size)
+        resolve(canvas.toDataURL('image/jpeg', 0.85))
+      }
+      img.onerror = () => resolve(dataUrl)
+      img.src = dataUrl
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
 export function mapUsuario(dto) {
   return {
     id: dto?.id != null ? String(dto.id) : '',
