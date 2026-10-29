@@ -2,6 +2,7 @@ import { createContext, useContext, useState } from 'react'
 import { Link, Outlet } from 'react-router-dom'
 import { ChevronDown } from 'lucide-react'
 import { BrandMark } from '@/views/components/BrandMark'
+import { ThemeToggle } from '@/views/components/ThemeToggle'
 import { copy, loadLang, saveLang, } from '@/lib/i18n'
 
 
@@ -30,26 +31,29 @@ export function AuthLayout() {
   return (
     <AuthLangContext.Provider value={{ lang, setLang, t }}>
       <div className="flex min-h-svh flex-col bg-fundo">
-        <header className="flex h-14 shrink-0 items-center justify-between bg-[#062921] px-4 md:px-8">
+        <header className="flex h-14 shrink-0 items-center justify-between bg-menu px-4 md:px-8">
           <Link to="/" className="no-underline">
             <BrandMark />
           </Link>
-          <label className="flex items-center gap-2">
-            <span className="t-apoio text-white/60">{t.language}</span>
-            <span className="relative">
-              <select
-                value={lang}
-                aria-label={t.language}
-                className="h-9 min-w-[11.5rem] appearance-none rounded-[8px] border border-white/20 bg-[#0c3a30] py-0 pr-8 pl-3 text-[13px] text-white outline-none"
-                style={{ colorScheme: 'dark' }}
-                onChange={(e) => setLang(e.target.value )}
-              >
-                <option value="pt">Português (Brasil)</option>
-                <option value="en">English</option>
-              </select>
-              <ChevronDown size={14} className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-white/70" />
-            </span>
-          </label>
+          <div className="flex items-center gap-2">
+            <ThemeToggle className="text-white/70 hover:bg-white/10 hover:text-white" />
+            <label className="flex items-center gap-2">
+              <span className="t-apoio text-white/60">{t.language}</span>
+              <span className="relative">
+                <select
+                  value={lang}
+                  aria-label={t.language}
+                  className="h-9 min-w-[11.5rem] appearance-none rounded-[8px] border border-white/20 bg-menu-hover py-0 pr-8 pl-3 text-[13px] text-white outline-none"
+                  style={{ colorScheme: 'dark' }}
+                  onChange={(e) => setLang(e.target.value)}
+                >
+                  <option value="pt">Português (Brasil)</option>
+                  <option value="en">English</option>
+                </select>
+                <ChevronDown size={14} className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-white/70" />
+              </span>
+            </label>
+          </div>
         </header>
 
         <div className="grid flex-1 lg:grid-cols-2">

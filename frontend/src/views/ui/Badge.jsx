@@ -9,10 +9,10 @@ export function Badge({
 
 ) {
   const map = {
-    success: 'bg-[#E8F5EF] text-sucesso border-[#C9E7DA]',
-    warning: 'bg-alerta text-alerta-texto border-[#F0E2BE]',
-    danger: 'bg-[#FDECEA] text-erro border-[#F5CFCB]',
-    info: 'bg-[#EAF3F6] text-informacao border-[#CDE2EA]',
+    success: 'bg-sucesso/12 text-sucesso border-sucesso/25',
+    warning: 'bg-alerta text-alerta-texto border-alerta-texto/25',
+    danger: 'bg-erro/12 text-erro border-erro/25',
+    info: 'bg-informacao/12 text-informacao border-informacao/25',
     neutral: 'bg-superficie-2 text-texto-secundario border-borda-forte',
   }
   return (

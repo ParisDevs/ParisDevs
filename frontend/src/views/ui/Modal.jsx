@@ -19,7 +19,7 @@ export function Modal({
 ) {
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1A17]/36 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
         className={`w-full ${wide ? 'max-w-3xl' : 'max-w-lg'} max-h-[90vh] overflow-y-auto rounded-[14px] border border-borda bg-superficie p-6 shadow-[0_18px_48px_rgba(10,26,23,0.16)]`}
         onClick={(e) => e.stopPropagation()}

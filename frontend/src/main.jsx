@@ -5,8 +5,11 @@ import { AppProviders } from '@/app/providers'
 import './styles/tokens.css'
 
 try {
-  const stored = JSON.parse(localStorage.getItem('pd.config') || '{}') 
-  if (stored.theme === 'dark') document.documentElement.dataset.theme = 'dark'
+  const stored = JSON.parse(localStorage.getItem('pd.config') || '{}')
+  if (stored.theme === 'dark') {
+    document.documentElement.dataset.theme = 'dark'
+    document.documentElement.style.colorScheme = 'dark'
+  }
 } catch {
   /* noop */
 }

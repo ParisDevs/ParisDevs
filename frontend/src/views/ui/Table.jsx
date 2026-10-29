@@ -15,7 +15,7 @@ export function Table({
 
 ) {
   return (
-    <div className="overflow-hidden rounded-[16px] border border-borda bg-superficie shadow-[0_1px_2px_rgba(13,31,27,0.04)]">
+    <div className="overflow-hidden rounded-[16px] border border-borda bg-superficie shadow-card">
       {toolbar ? <div className="border-b border-borda px-4 py-3.5">{toolbar}</div> : null}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[720px] border-collapse text-left">

@@ -212,7 +212,10 @@ export function loadConfig() {
 
 export function applyTheme(theme) {
   if (typeof document === 'undefined') return
-  document.documentElement.dataset.theme = theme
+  const next = theme === 'dark' ? 'dark' : 'light'
+  const root = document.documentElement
+  root.dataset.theme = next
+  root.style.colorScheme = next
 }
 
  

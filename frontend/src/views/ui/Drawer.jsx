@@ -14,7 +14,7 @@ export function Drawer({
 ) {
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-[#0A1A17]/36" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/40" onClick={onClose}>
       <aside
         className="flex h-full w-full max-w-md flex-col border-l border-borda bg-superficie shadow-[0_18px_48px_rgba(10,26,23,0.16)]"
         onClick={(e) => e.stopPropagation()}

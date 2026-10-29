@@ -4,6 +4,7 @@ import { Camera, Pencil, Trash2 } from 'lucide-react'
 import { Badge, Banner, Button, Card, Empty, Field, Input, Kpi, Modal, PageHeader, Select, Table, Td, Kv, Toast } from '@/views/ui'
 import { CARGOS, cargoLabel, fotoSrc } from '@/models/domain/usuario'
 import { PERMISSION_CARGOS, PERMISSION_MODULES, permissionLabel, permissionLevel } from '@/models/domain/configuracao'
+import { ThemeToggle } from '@/views/components/ThemeToggle'
 import { UserAvatar } from '@/views/components/UserAvatar'
 import { useAppViewModel } from '@/viewmodels/AppViewModel'
 import { useUsuariosViewModel } from '@/viewmodels/configuracao/useUsuariosViewModel'
@@ -168,10 +169,7 @@ export function PreferenciasPage() {
       <Card className="max-w-xl space-y-4">
         <Banner tone="info">Preferências são gravadas só neste dispositivo.</Banner>
         <Field label="Tema">
-          <Select value={config.theme} onChange={(e) => saveConfig({ theme: e.target.value })}>
-            <option value="light">Claro</option>
-            <option value="dark">Escuro</option>
-          </Select>
+          <ThemeToggle variant="segment" />
         </Field>
         <h2 className="t-h3 pt-2">Notificações</h2>
         <CheckRow

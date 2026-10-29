@@ -15,7 +15,7 @@ export function FilterCard({
       ) : null}
       <select
         className={cn(
-          'h-[52px] w-full min-w-0 appearance-none rounded-[16px] border border-borda bg-superficie pr-10 text-[13.5px] font-medium text-texto shadow-[0_1px_2px_rgba(13,31,27,0.04)] outline-none',
+          'h-[52px] w-full min-w-0 appearance-none rounded-[16px] border border-borda bg-superficie pr-10 text-[13.5px] font-medium text-texto shadow-card outline-none',
           Icon ? 'pl-10' : 'pl-4',
         )}
         {...props}

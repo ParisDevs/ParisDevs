@@ -26,8 +26,8 @@ export function SummaryCard({
       type="button"
       onClick={onClick}
       className={cn(
-        'flex flex-col gap-1.5 rounded-[14px] border bg-superficie px-[17px] py-[15px] text-left shadow-[0_1px_2px_rgba(10,26,23,0.04)] transition-shadow',
-        active ? 'border-primaria shadow-[0_0_0_3px_#eaf3f0]' : 'border-borda hover:border-borda-forte hover:shadow-[0_4px_16px_rgba(10,26,23,0.07)]',
+        'flex flex-col gap-1.5 rounded-[14px] border bg-superficie px-[17px] py-[15px] text-left shadow-card transition-shadow',
+        active ? 'border-primaria ring-2 ring-primaria/20' : 'border-borda hover:border-borda-forte',
       )}
     >
       <div className="flex items-center gap-2">

@@ -31,6 +31,7 @@ import { BrandMark } from '@/views/components/BrandMark'
 import { GROUP_NAME, companies } from '@/models/fixtures'
 import { monthLong } from '@/lib/format'
 import { fotoSrc } from '@/models/domain/usuario'
+import { ThemeToggle } from '@/views/components/ThemeToggle'
 import { UserAvatar } from '@/views/components/UserAvatar'
 import { cn } from '@/lib/cn'
 import { useAppViewModel } from '@/viewmodels/AppViewModel'
@@ -259,7 +260,7 @@ export function AppShell() {
 
   return (
     <div className="min-h-svh bg-fundo lg:flex">
-      {open ? <div className="fixed inset-0 z-30 bg-[#062921]/50 lg:hidden" onClick={() => setOpen(false)} /> : null}
+      {open ? <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={() => setOpen(false)} /> : null}
 
       <aside
         className={`fixed inset-y-0 left-0 z-40 flex h-svh max-h-svh w-[248px] min-h-0 flex-col overflow-hidden bg-menu text-white transition-transform ${open ? 'translate-x-0' : '-translate-x-full'} ${collapsed ? '' : 'lg:sticky lg:top-0 lg:translate-x-0'}`}
@@ -428,6 +429,7 @@ export function AppShell() {
                   </div>
                 ) : null}
               </div>
+              <ThemeToggle />
               <button type="button" className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-[6px] text-texto-secundario hover:bg-superficie-2" onClick={() => navigate('/alertas')} aria-label="Notificações">
                 <Bell size={16} />
               </button>

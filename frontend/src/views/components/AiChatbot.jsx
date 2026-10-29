@@ -129,7 +129,7 @@ export function AiChatbot() {
 
       <button
         type="button"
-        className="pointer-events-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-menu text-ouro shadow-[0_10px_28px_rgba(6,41,33,0.35)] hover:bg-[#0c3a30]"
+        className="pointer-events-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-menu text-ouro shadow-[0_10px_28px_rgba(0,0,0,0.35)] hover:bg-menu-hover"
         aria-label={open ? 'Fechar assistente de IA' : 'Abrir assistente de IA'}
         onClick={() => setOpen((v) => !v)}
       >
