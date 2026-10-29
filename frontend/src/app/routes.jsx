@@ -39,14 +39,15 @@ import {
   AnalyticsPage,
   CalendarioPage,
   CentrosPage,
-  ContaDetalhePage,
-  ContaFormPage,
-  ContasPagarPage,
-  ContasReceberPage,
+  // ContaDetalhePage,
+  // ContaFormPage,
+  // ContasPagarPage,
+  // ContasReceberPage,
   DreComparativaPage,
+  DreHistoricoPage,
   DrePage,
   FluxoPage,
-  PlanoPage,
+  // PlanoPage,
   RegrasClassPage,
 } from '@/views/pages/fin/FinancePages'
 import {
@@ -118,20 +119,22 @@ export function AppRoutes() {
           <Route path="/ia/revisao/:id" element={<IaRevisaoPage />} />
           <Route path="/ia/aprendizado" element={<IaAprendizadoPage />} />
           <Route path="/ia/insights" element={<IaInsightsPage />} />
-          <Route path="/plano-de-contas" element={<PlanoPage />} />
+          {/* <Route path="/plano-de-contas" element={<PlanoPage />} /> */}
           <Route path="/centros-de-custo" element={<CentrosPage />} />
           <Route path="/regras-classificacao" element={<RegrasClassPage />} />
-          <Route path="/contas-a-pagar" element={<ContasPagarPage />} />
+          {/* <Route path="/contas-a-pagar" element={<ContasPagarPage />} />
           <Route path="/contas-a-pagar/nova" element={<ContaFormPage kind="pagar" mode="criar" />} />
           <Route path="/contas-a-pagar/:id" element={<ContaDetalhePage kind="pagar" />} />
           <Route path="/contas-a-pagar/:id/editar" element={<ContaFormPage kind="pagar" mode="editar" />} />
           <Route path="/contas-a-receber" element={<ContasReceberPage />} />
           <Route path="/contas-a-receber/nova" element={<ContaFormPage kind="receber" mode="criar" />} />
-          <Route path="/contas-a-receber/:id" element={<ContaDetalhePage kind="receber" />} />
+          <Route path="/contas-a-receber/:id" element={<ContaDetalhePage kind="receber" />} /> */}
           <Route path="/agenda" element={<AgendaPage />} />
           <Route path="/fluxo-de-caixa" element={<FluxoPage />} />
           <Route path="/calendario" element={<CalendarioPage />} />
           <Route path="/dre" element={<DrePage />} />
+          <Route path="/dre/historico" element={<DreHistoricoPage />} />
+          <Route path="/dre/historico/:data" element={<DrePage />} />
           <Route path="/dre/comparativa" element={<DreComparativaPage />} />
           <Route path="/analytics" element={<AnalyticsPage />} />
           <Route path="/alertas" element={<AlertasPage />} />

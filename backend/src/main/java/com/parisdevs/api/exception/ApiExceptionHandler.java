@@ -8,6 +8,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.Map;
 
@@ -49,7 +50,7 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", ex.getMessage()));
     }
 
-    @ExceptionHandler({ FilialObrigatoriaException.class, CnpjInvalidoException.class })
+    @ExceptionHandler({ FilialObrigatoriaException.class, CnpjInvalidoException.class, DataInvalidaException.class })
     public ResponseEntity<Map<String, String>> badRequest(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", ex.getMessage()));
     }
@@ -65,6 +66,16 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, String>> unreadable() {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("message", "Os dados informados são inválidos."));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, String>> typeMismatch(MethodArgumentTypeMismatchException ex) {
+        if (ex.getRequiredType() == java.time.LocalDate.class) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Informe uma data válida no formato YYYY-MM-DD."));
+        }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("message", "Os dados informados são inválidos."));
     }

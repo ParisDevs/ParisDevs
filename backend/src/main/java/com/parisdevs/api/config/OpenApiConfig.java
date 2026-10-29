@@ -58,7 +58,8 @@ public class OpenApiConfig {
                 .addTagsItem(new Tag().name("Filiais").description("Cadastro e consulta de filiais"))
                 .addTagsItem(new Tag().name("Conta Bancaria").description("Contas bancárias vinculadas à filial"))
                 .addTagsItem(new Tag().name("Operações").description("Lançamentos de recebimento e pagamento"))
-                .addTagsItem(new Tag().name("Dashboard").description("Indicadores do recorte de período"));
+                .addTagsItem(new Tag().name("Dashboard").description("Indicadores do recorte de período"))
+                .addTagsItem(new Tag().name("DRE").description("DRE diária até D-1 e histórico de snapshots"));
     }
 
     @Bean
@@ -75,6 +76,7 @@ public class OpenApiConfig {
             boolean recursoUnico = pathVar && (name.startsWith("buscar") || name.startsWith("atualizar") || name.startsWith("deletar"));
 
             boolean login = "login".equals(name) && http == RequestMethod.POST;
+            boolean dre = handlerMethod.getBeanType().getSimpleName().equals("DreController");
             if (!login) {
                 operation.addSecurityItem(new SecurityRequirement().addList(BEARER_JWT));
                 putIfAbsent(responses, "401", "Token ausente, inválido ou expirado", erroJson);
@@ -85,10 +87,16 @@ public class OpenApiConfig {
                 if (recursoUnico) {
                     putIfAbsent(responses, "404", "Recurso não encontrado", erroJson);
                 }
+                if (dre) {
+                    putIfAbsent(responses, "400", "Data inválida", erroJson);
+                }
             } else if (http == RequestMethod.POST) {
                 if (login) {
                     putIfAbsent(responses, "200", "Login realizado");
                     putIfAbsent(responses, "401", "Credenciais inválidas", erroJson);
+                } else if (dre && "gerar".equals(name)) {
+                    putIfAbsent(responses, "200", "Snapshot gravado");
+                    putIfAbsent(responses, "400", "Data inválida", erroJson);
                 } else {
                     responses.remove("200");
                     putIfAbsent(responses, "201", "Recurso criado");

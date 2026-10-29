@@ -10,4 +10,7 @@ public interface OperacaoRepository extends JpaRepository<Operacao, Long> {
 
     @Query("select distinct o from Operacao o left join fetch o.contaBancaria")
     List<Operacao> findAllWithConta();
+
+    @Query("select distinct o from Operacao o left join fetch o.contaBancaria cb left join fetch cb.filial")
+    List<Operacao> findAllWithContaAndFilial();
 }

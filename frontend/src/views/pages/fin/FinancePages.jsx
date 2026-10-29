@@ -10,7 +10,7 @@ export {
 
 export { FluxoPage, CalendarioPage } from '@/views/features/fluxo-caixa/pages'
 
-export { DrePage, DreComparativaPage } from '@/views/features/dre/pages'
+export { DrePage, DreHistoricoPage, DreComparativaPage } from '@/views/features/dre/pages'
 
 export { AnalyticsPage } from '@/views/features/analytics/pages'
 

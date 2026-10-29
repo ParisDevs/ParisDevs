@@ -1,9 +1,6 @@
 import {
-  ArrowDownLeft,
   ArrowLeftRight,
-  ArrowUpRight,
   Bell,
-  BookOpen,
   Building2,
   BarChart3,
   CalendarRange,
@@ -11,6 +8,7 @@ import {
   ChevronRight,
   CircleHelp,
   FileText,
+  History,
   Landmark,
   LayoutDashboard,
   LayoutGrid,
@@ -31,7 +29,9 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { AiChatbot } from '@/views/components/AiChatbot'
 import { BrandMark } from '@/views/components/BrandMark'
 import { GROUP_NAME, companies } from '@/models/fixtures'
-import { initials, monthLong } from '@/lib/format'
+import { monthLong } from '@/lib/format'
+import { fotoSrc } from '@/models/domain/usuario'
+import { UserAvatar } from '@/views/components/UserAvatar'
 import { cn } from '@/lib/cn'
 import { useAppViewModel } from '@/viewmodels/AppViewModel'
 import { Button, Input, Modal } from '../ui'
@@ -86,12 +86,13 @@ const OPERACAO_ITEMS = [
   { to: '/extratos', label: 'Extratos', icon: Landmark },
   { to: '/conciliacao', label: 'Conciliação', icon: Scale },
   { to: '/documentos', label: 'Documentos', icon: FileText, count: 'documentos' },
-  { to: '/contas-a-pagar', label: 'Contas a pagar', icon: ArrowUpRight },
-  { to: '/contas-a-receber', label: 'Contas a receber', icon: ArrowDownLeft },
+  // { to: '/contas-a-pagar', label: 'Contas a pagar', icon: ArrowUpRight },
+  // { to: '/contas-a-receber', label: 'Contas a receber', icon: ArrowDownLeft },
 ]
 
 const ANALISE_PRIMARY = { to: '/dre', label: 'Relatórios', icon: PieChart }
 const ANALISE_MORE = [
+  { to: '/dre/historico', label: 'Histórico DRE', icon: History },
   { to: '/fluxo-de-caixa', label: 'Fluxo de caixa', icon: TrendingUp },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/alertas', label: 'Alertas', icon: Bell },
@@ -176,7 +177,7 @@ export function AppShell() {
 
   useEffect(() => {
     if (navSectionActive(ANALISE_MORE, location.pathname)) setAnaliseOpen(true)
-    if (location.pathname.startsWith('/configuracoes') || location.pathname.startsWith('/plano-de-contas')) setConfOpen(true)
+    if (location.pathname.startsWith('/configuracoes')) setConfOpen(true)
   }, [location.pathname])
 
   useEffect(() => {
@@ -299,10 +300,10 @@ export function AppShell() {
             'Configuração',
             confOpen,
             () => setConfOpen((v) => !v),
-            settingsActive || location.pathname.startsWith('/plano-de-contas') || location.pathname.startsWith('/configuracoes'),
+            settingsActive || location.pathname.startsWith('/configuracoes'),
             confOpen
               ? [
-                  { to: '/plano-de-contas', label: 'Plano de contas', icon: BookOpen },
+                  // { to: '/plano-de-contas', label: 'Plano de contas', icon: BookOpen },
                   { to: '/configuracoes', label: 'Configurações', icon: Settings },
                 ]
               : [],
@@ -311,11 +312,14 @@ export function AppShell() {
 
         <div className="relative shrink-0 border-t border-white/[0.07] px-3 pt-3 pb-4">
           <div className="flex items-center gap-2.5 rounded-[10px] border border-white/[0.07] bg-white/[0.04] px-2.5 py-2">
-            <img
-              src="/brand/paris6.png"
-              alt=""
-              className="h-8 w-8 shrink-0 rounded-full object-cover"
-            />
+            <span className="inline-flex h-8 w-8 shrink-0 overflow-hidden rounded-full bg-white">
+              <img
+                src="/brand/paris6-bistro.png"
+                alt="Paris 6 Bistrô"
+                className="h-full w-full object-cover"
+                style={{ transform: 'scale(1.35)', objectPosition: '50% 46%' }}
+              />
+            </span>
             <div className="min-w-0">
               <strong className="block truncate text-[12.5px] font-semibold text-white/90">{GROUP_NAME}</strong>
               <p className="truncate text-[11px] text-white/38">{companies.length} empresas · Corporativo</p>
@@ -438,9 +442,7 @@ export function AppShell() {
                   aria-expanded={userMenu}
                   aria-haspopup="menu"
                 >
-                  <span className="inline-flex h-[28px] w-[28px] items-center justify-center rounded-full bg-primaria text-[10.5px] font-bold text-white">
-                    {initials(displayName)}
-                  </span>
+                  <UserAvatar src={fotoSrc(usuario?.foto)} name={displayName} size={28} />
                   <span className="hidden text-[13px] font-medium sm:block">{displayName.split(' ')[0]}</span>
                 </button>
                 {userMenu ? (

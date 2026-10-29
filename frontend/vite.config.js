@@ -17,6 +17,7 @@ export default defineConfig({
       '/contasBancarias': { target: 'http://localhost:8080', changeOrigin: true },
       '/operacoes': { target: 'http://localhost:8080', changeOrigin: true },
       '/dashboard/kpis': { target: 'http://localhost:8080', changeOrigin: true },
+      '/dre': { target: 'http://localhost:8080', changeOrigin: true },
     },
   },
 })

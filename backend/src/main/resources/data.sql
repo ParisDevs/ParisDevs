@@ -9,11 +9,11 @@ VALUES
     ('Paris 6 Grande SP', '15678912000104', 'Rua José Versolato, 111 – São Bernardo do Campo – SP', 'tok_grande_sp');
 
 -- 2. USUARIO (cargo = enum STRING)
-INSERT INTO usuario (nome, cargo, email, senha, filial_id)
+INSERT INTO usuario (nome, cargo, email, senha, foto, filial_id)
 VALUES
-    ('Carlos Silva', 'ADMINISTRADOR', 'carlos@techsolutions.com', 'senha123', 1),
-    ('Ana Souza', 'FINANCEIRO', 'ana@techsolutions.com', 'senha456', 1),
-    ('Pedro Santos', 'GERENTE', 'pedro@inovacaodigital.com', 'senha789', 2);
+    ('Carlos Silva', 'ADMINISTRADOR', 'carlos@techsolutions.com', 'senha123', '/avatars/carlos.jpg', 1),
+    ('Ana Souza', 'FINANCEIRO', 'ana@techsolutions.com', 'senha456', NULL, 1),
+    ('Pedro Santos', 'GERENTE', 'pedro@inovacaodigital.com', 'senha789', NULL, 2);
 
 -- 3. CONTA_BANCARIA (mesmo recorte do dashboard de demonstração)
 INSERT INTO conta_bancaria
@@ -474,3 +474,18 @@ VALUES
     (4200.00, 0, 'Evento corporativo Haddock Lobo', '', '2026-10-21 19:00:00', 1),
     (1560.00, 0, 'Reserva OpenTable', '', '2026-10-28 13:45:00', 4),
     (730.00, 1, 'Rappi', '', '2026-10-29 17:05:00', 4);
+
+-- 5. DRE_DIARIO (perc_mercadorias = ratio 0–1; apresentação out/2026)
+INSERT INTO dre_diario
+(data_referencia, filial_id, receita_total, receita_liquida, mercadorias, perc_mercadorias, resultado, gerado_em)
+VALUES
+    ('2026-10-22', 1, 612450.00, 532831.50, 161200.00, 0.302535, 142110.20, '2026-10-22 22:10:00'),
+    ('2026-10-22', 2, 338900.00, 294843.00, 132400.00, 0.449054, -41220.40, '2026-10-22 22:10:00'),
+    ('2026-10-23', 1, 628110.00, 546455.70, 165880.00, 0.303556, 146200.10, '2026-10-23 22:05:00'),
+    ('2026-10-23', 2, 344220.00, 299471.40, 136010.00, 0.454167, -43880.00, '2026-10-23 22:05:00'),
+    ('2026-10-24', 1, 641880.00, 558435.60, 168440.00, 0.301628, 149010.80, '2026-10-24 22:15:00'),
+    ('2026-10-24', 2, 351040.00, 305404.80, 139200.00, 0.455790, -46110.55, '2026-10-24 22:15:00'),
+    ('2026-10-27', 1, 655200.00, 570024.00, 171020.00, 0.300023, 151440.00, '2026-10-27 22:08:00'),
+    ('2026-10-27', 2, 357880.00, 311355.60, 142110.00, 0.456423, -48820.30, '2026-10-27 22:08:00'),
+    ('2026-10-28', 1, 669307.00, 582297.09, 173851.55, 0.298561, 154095.22, '2026-10-28 22:12:00'),
+    ('2026-10-28', 2, 364071.58, 316742.27, 145145.80, 0.458246, -50664.85, '2026-10-28 22:12:00');
