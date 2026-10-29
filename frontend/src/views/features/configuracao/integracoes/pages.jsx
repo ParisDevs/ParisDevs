@@ -345,11 +345,11 @@ export function PlanoPadraoPage() {
         <Button onClick={() => setToast('Plano não foi gravado no servidor. Ajuste a árvore em Plano de contas.')}>
           Aplicar
         </Button>
-        <CardAlso>
+        {/* <CardAlso>
           <Link to="/plano-de-contas">
             <Button variant="secondary">Plano de contas</Button>
           </Link>
-        </CardAlso>
+        </CardAlso> */}
       </Card>
       <Toast message={toast} />
     </div>

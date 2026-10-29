@@ -39,9 +39,9 @@ function replyOf(q, ctx) {
   if (t.includes('banco') || t.includes('conex') || t.includes('open finance')) {
     return { from: 'bot', text: 'As conexões dependem da autorização do titular no Open Finance.', to: '/conexoes', toLabel: 'Abrir conexões' }
   }
-  if (t.includes('pagar') || t.includes('receber') || t.includes('agenda')) {
-    return { from: 'bot', text: 'Contas a pagar e a receber ficam na operação, com vencimento e status.', to: '/contas-a-pagar', toLabel: 'Abrir contas a pagar' }
-  }
+  // if (t.includes('pagar') || t.includes('receber') || t.includes('agenda')) {
+  //   return { from: 'bot', text: 'Contas a pagar e a receber ficam na operação, com vencimento e status.', to: '/contas-a-pagar', toLabel: 'Abrir contas a pagar' }
+  // }
   if (t.includes('olá') || t.includes('oi') || t.includes('ola') || t.includes('ajuda')) {
     return { from: 'bot', text: `Olá${ctx.name ? `, ${ctx.name}` : ''}. Pergunte por saldo, DRE, conciliação ou classificação.` }
   }
