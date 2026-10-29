@@ -23,7 +23,7 @@ export const companies = [
 ]
 
 export const banks = {
-  Itaú: { short: 'IT', color: '#C25E0A' },
+  Itaú: { short: 'IT', color: '#0033CC' },
   Nubank: { short: 'NU', color: '#820AD1' },
   XP: { short: 'XP', color: '#2B2F36' },
   Bradesco: { short: 'BR', color: '#B0203A' },

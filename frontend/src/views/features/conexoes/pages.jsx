@@ -143,7 +143,7 @@ export function ConexoesPage() {
             </label>
           </div>
           {!catalog.length ? <Empty>Nenhuma instituição com esse nome.</Empty> : (
-            <ul className="grid gap-2 sm:grid-cols-2">
+            <ul className="grid gap-3 sm:grid-cols-2">
               {catalog.map((inst) => {
                 const linked = byInstitution.get(inst.id)?.length ?? 0
                 return (
@@ -180,7 +180,7 @@ export function ConexoesPage() {
               {scoped.map((a) => (
                 <tr key={a.id}>
                   <Td>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <BankLogo bank={a.bank} size={28} />
                       <span>{a.bank}</span>
                     </div>

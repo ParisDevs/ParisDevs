@@ -84,7 +84,7 @@ export function BancosPage() {
           {bancos.map((b) => (
             <tr key={b.bank}>
               <Td>
-                <span className="flex items-center gap-2.5">
+                <span className="flex items-center gap-3">
                   <BankLogo bank={b.bank} size={28} />
                   {b.bank}
                 </span>
@@ -181,7 +181,7 @@ export function ContasBancariasPage() {
           {rows.map((a) => (
             <tr key={a.id}>
               <Td>
-                <span className="flex items-center gap-2.5">
+                <span className="flex items-center gap-3">
                   <BankLogo bank={a.bank} size={28} />
                   {a.bank}
                 </span>

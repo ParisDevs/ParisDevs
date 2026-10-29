@@ -2,7 +2,7 @@
 
 /** Catálogo de instituições para o fluxo de conexão. A autorização real depende de um provedor Open Finance. */
 export const institutions = [
-  { id: 'itau', name: 'Itaú', short: 'IT', color: '#C25E0A', openFinance: true },
+  { id: 'itau', name: 'Itaú', short: 'IT', color: '#0033CC', openFinance: true },
   { id: 'nubank', name: 'Nubank', short: 'NU', color: '#820AD1', openFinance: true },
   { id: 'xp', name: 'XP', short: 'XP', color: '#2B2F36', openFinance: true },
   { id: 'bradesco', name: 'Bradesco', short: 'BR', color: '#B0203A', openFinance: true },

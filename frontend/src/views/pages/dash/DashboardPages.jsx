@@ -461,7 +461,7 @@ export function DashboardPage() {
               to="/conexoes"
               className="t-body mb-3 flex items-start justify-between gap-3 border-b border-borda pb-3 last:mb-0 last:border-0"
             >
-              <span className="flex min-w-0 items-start gap-2.5">
+              <span className="flex min-w-0 items-start gap-3">
                 <BankLogo bank={a.bank} size={28} />
                 <span>
                   {a.bank} {a.number}

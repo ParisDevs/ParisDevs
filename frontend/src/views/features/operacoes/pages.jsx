@@ -218,7 +218,7 @@ export function OperacoesPage() {
               </Td>
               <Td>{t.category || '—'}</Td>
               <Td>
-                <span className="inline-flex items-center gap-2">
+                <span className="inline-flex items-center gap-2.5">
                   <BankLogo bank={t.instituicao} size={22} />
                   <span>
                     {t.instituicao} {t.numeroConta}
