@@ -1,58 +1,35 @@
-INSERT INTO filial (razao_social, cnpj, endereco)
+-- 1. FILIAL (CNPJ com 14 dígitos; token obrigatório no cadastro via API)
+INSERT INTO filial (razao_social, cnpj, endereco, token)
 VALUES
-    ('Tech Solutions LTDA', '12.345.678/0001-90', 'Rua das Flores, 100 - São Paulo/SP'),
-    ('Inovação Digital LTDA', '98.765.432/0001-10', 'Av. Brasil, 500 - Campinas/SP');
+    ('Tech Solutions LTDA', '12345678000190', 'Rua das Flores, 100 - São Paulo/SP', 'tok_tech_solutions'),
+    ('Inovação Digital LTDA', '98765432000110', 'Av. Brasil, 500 - Campinas/SP', 'tok_inovacao_digital');
 
--- 2. USUARIO
+-- 2. USUARIO (cargo = enum STRING)
 INSERT INTO usuario (nome, cargo, email, senha, filial_id)
 VALUES
-    ('Carlos Silva', 'Administrador', 'carlos@techsolutions.com', 'senha123', 1),
-    ('Ana Souza', 'Financeiro', 'ana@techsolutions.com', 'senha456', 1),
-    ('Pedro Santos', 'Gerente', 'pedro@inovacaodigital.com', 'senha789', 2);
+    ('Carlos Silva', 'ADMINISTRADOR', 'carlos@techsolutions.com', 'senha123', 1),
+    ('Ana Souza', 'FINANCEIRO', 'ana@techsolutions.com', 'senha456', 1),
+    ('Pedro Santos', 'GERENTE', 'pedro@inovacaodigital.com', 'senha789', 2);
 
--- 3. CONTABANCARIA
-INSERT INTO contabancaria
-(banco, agencia, numero_conta, tipo, saldo, filial_id)
+-- 3. CONTA_BANCARIA
+INSERT INTO conta_bancaria
+(codigo_banco, nome_instituicao, agencia, agencia_digito, numero_conta, tipo_conta,
+ cpf_cnpj_titular, nome_titular, ativo, saldo, filial_id)
 VALUES
-    ('Banco do Brasil', '1234', '123456-7', 1.00, 15000.00, 1),
-    ('Itaú', '5678', '987654-3', 2.00, 25000.00, 1),
-    ('Santander', '9012', '456789-0', 1.00, 10000.00, 2);
+    ('001', 'Banco do Brasil', '1234', '0', '123456-7', 'Conta corrente',
+     '12345678000190', 'Tech Solutions LTDA', TRUE, 15000.00, 1),
+    ('341', 'Itaú', '5678', '0', '987654-3', 'Conta corrente',
+     '12345678000190', 'Tech Solutions LTDA', TRUE, 25000.00, 1),
+    ('033', 'Santander', '9012', '9', '456789-0', 'Conta corrente',
+     '98765432000110', 'Inovação Digital LTDA', TRUE, 10000.00, 2);
 
--- 4. RECEITA
-INSERT INTO receita
-(descricao, valor, data_receita, categoria, conta_bancaria_id)
+-- 4. OPERACAO (tipo_operacao: 0 = RECEBIMENTO, 1 = PAGAMENTO)
+INSERT INTO operacao
+(valor_operacao, tipo_operacao, razao_social, categoria, dt_hora, fk_conta_bancaria)
 VALUES
-    ('Venda de serviços', 12000.00, '2026-10-05', 'Serviços', 1),
-    ('Consultoria de TI', 8000.00, '2026-10-10', 'Consultoria', 2),
-    ('Venda de licenças', 5000.00, '2026-10-15', 'Vendas', 3);
-
--- 5. DESPESA
-INSERT INTO despesa
-(descricao, valor, data_despesa, categoria, filial_id)
-VALUES
-    ('Pagamento de aluguel', 2500.00, '2026-10-03', 'Infraestrutura', 1),
-    ('Pagamento de salários', 6000.00, '2026-10-10', 'Pessoal', 1),
-    ('Compra de equipamentos', 1800.00, '2026-10-12', 'Equipamentos', 2);
-
--- 6. RESULTADO
-INSERT INTO resultado
-(filial_id, receita_id, despesa_id, periodo,
- receita_total, despesa_total, resultado_liquido)
-VALUES
-    (1, 1, 1, '2026-10', 12000.00, 2500.00, 9500.00),
-    (1, 2, 2, '2026-10', 8000.00, 6000.00, 2000.00),
-    (2, 3, 3, '2026-10', 5000.00, 1800.00, 3200.00);
--- 7. RESULTADO
--- RECEITAS DE TESTE
-INSERT INTO receita (descricao, valor, data_receita, categoria, conta_bancaria_id)
-VALUES
-    ('Venda de software - teste', 15000.00, '2026-10-05', 'Vendas', 1),
-    ('Consultoria - teste',        8500.00, '2026-10-12', 'Serviços', 2),
-    ('Manutenção - teste',         3500.00, '2026-10-20', 'Serviços', 1);
-
--- DESPESAS DE TESTE
-INSERT INTO despesa (descricao, valor, data_despesa, categoria, filial_id)
-VALUES
-    ('Aluguel - teste',            2500.00, '2026-10-03', 'Operacional', 1),
-    ('Folha de pagamento - teste', 6000.00, '2026-10-10', 'Pessoal',     1),
-    ('Infraestrutura - teste',     1800.00, '2026-10-15', 'Tecnologia',  1);
+    (12000.00, 0, 'Tech Solutions LTDA', 'Serviços', '2026-10-05 10:00:00', 1),
+    (8000.00, 0, 'Tech Solutions LTDA', 'Consultoria', '2026-10-10 14:30:00', 2),
+    (5000.00, 0, 'Inovação Digital LTDA', 'Vendas', '2026-10-15 09:15:00', 3),
+    (2500.00, 1, 'Imobiliária Parque', 'Infraestrutura', '2026-10-03 08:30:00', 1),
+    (6000.00, 1, 'Folha de pagamento', 'Pessoal', '2026-10-10 07:00:00', 1),
+    (1800.00, 1, 'Fornecedor Equipamentos', 'Equipamentos', '2026-10-12 16:20:00', 3);
