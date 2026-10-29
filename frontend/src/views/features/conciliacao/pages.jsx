@@ -2,11 +2,11 @@ import { useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
 import { Banner, Button, Card, Drawer, Empty, Field, Kpi, Modal, PageHeader, Select, Table, Td, Textarea, Toast, Kv } from '@/views/ui'
-import { chartOfAccounts, expectedEntries, reconLabels } from '@/models/fixtures'
+import { reconLabels } from '@/models/fixtures'
 import { extractCnpj } from '@/models/domain/banking'
-import { lookupCnpj, } from '@/models/domain/cnpjLookup'
+import { lookupCnpj } from '@/models/domain/cnpjLookup'
 import { GastosPorCategoriaCard } from '@/views/charts'
-import { categoryLabel, gastoChartGroup, saidaMercadoriasHierarchy } from '@/models/domain/finance'
+import { gastoChartGroup } from '@/models/domain/finance'
 import {
   GASTO_GROUP_META,
   buildGastoCategoriaRows,
@@ -14,7 +14,6 @@ import {
   conciliacaoCategoriaHref,
   conciliacaoFolhaHref,
   conciliacaoSubHref,
-  filterSaidas,
   findLeaf,
   findSub,
   getLeavesForSub,
@@ -22,14 +21,15 @@ import {
   isGastoGroupId,
   summarizeTransactions,
   txInGastoGroup,
-
 } from '@/models/domain/reconCategories'
 import { date, money, percent } from '@/lib/format'
 import { cn } from '@/lib/cn'
-import { useAppViewModel, useScopedTx } from '@/viewmodels/AppViewModel'
-
+import { useAppViewModel } from '@/viewmodels/AppViewModel'
+import {
+  useConciliacaoDetalheViewModel,
+  useConciliacaoViewModel,
+} from '@/viewmodels/conciliacao/useConciliacaoViewModel'
 import { ReconStatusBadge } from '@/views/features/transactions/components/ReconStatusBadge'
-
 
 function ReconSectionTitle({ title, subtitle }) {
   return (
@@ -40,14 +40,25 @@ function ReconSectionTitle({ title, subtitle }) {
   )
 }
 
-const RECON_EDITAVEL = ['conciliado', 'pendente', 'sugestao', 'divergencia', 'duplicidade']
+function ConciliacaoStatus({ carregando, erro }) {
+  if (carregando) {
+    return (
+      <Banner tone="info" className="mb-4">
+        Carregando conciliação…
+      </Banner>
+    )
+  }
+  if (erro) {
+    return (
+      <Banner tone="error" className="mb-4">
+        {erro}
+      </Banner>
+    )
+  }
+  return null
+}
 
-const CATEGORIAS_EDITAVEIS = chartOfAccounts.filter(
-  (c) => !chartOfAccounts.some((ch) => ch.parent === c.code),
-)
-
-function ConciliacaoIaPorCategoriaTable({ saidas, rows }) {
-  const { setRecon, classify } = useAppViewModel()
+function ConciliacaoIaPorCategoriaTable({ saidas, rows, categorias, classificar, salvandoId }) {
   const [expanded, setExpanded] = useState(null)
   const [toast, setToast] = useState(null)
 
@@ -125,39 +136,26 @@ function ConciliacaoIaPorCategoriaTable({ saidas, rows }) {
                           <tr key={t.id}>
                             <td className="t-body whitespace-nowrap border-b border-borda px-3 py-2.5">{date(t.date)}</td>
                             <td className="t-body border-b border-borda px-3 py-2.5">
-                              <Link to={`/extratos/${t.id}`} className="text-primaria hover:underline">{t.description}</Link>
+                              <Link to={`/conciliacao/${t.id}`} className="text-primaria hover:underline">{t.description}</Link>
                             </td>
                             <td className="t-body num border-b border-borda px-3 py-2.5">{money(t.amount)}</td>
                             <td className="border-b border-borda px-3 py-2.5">
-                              <Select
-                                className="min-w-[140px] text-[13px]"
-                                value={t.recon}
-                                aria-label={`Conciliação de ${t.description}`}
-                                onChange={(e) => {
-                                  const status = e.target.value 
-                                  setRecon(t.id, status, 'Ajuste na conciliação por categoria')
-                                  setToast('Conciliação atualizada.')
-                                }}
-                              >
-                                {RECON_EDITAVEL.map((r) => (
-                                  <option key={r} value={r}>{reconLabels[r]}</option>
-                                ))}
-                              </Select>
+                              <ReconStatusBadge recon={t.recon} />
                             </td>
                             <td className="border-b border-borda px-3 py-2.5">
                               <Select
                                 className="min-w-[200px] text-[13px]"
                                 value={t.category ?? ''}
+                                disabled={salvandoId === String(t.id)}
                                 aria-label={`Categoria de ${t.description}`}
-                                onChange={(e) => {
-                                  const code = e.target.value || null
-                                  classify(t.id, code, t.costCenter, 'Ajuste na conciliação por categoria', code ? 'alterada' : 'rejeitada')
-                                  setToast('Categoria atualizada.')
+                                onChange={async (e) => {
+                                  const ok = await classificar(t.id, e.target.value)
+                                  if (ok) setToast('Categoria atualizada.')
                                 }}
                               >
-                                <option value="">Sem categoria</option>
-                                {CATEGORIAS_EDITAVEIS.map((c) => (
-                                  <option key={c.code} value={c.code}>{categoryLabel(c.code)}</option>
+                                {!t.category ? <option value="">Sem categoria</option> : null}
+                                {categorias.map((nome) => (
+                                  <option key={nome} value={nome}>{nome}</option>
                                 ))}
                               </Select>
                             </td>
@@ -178,35 +176,32 @@ function ConciliacaoIaPorCategoriaTable({ saidas, rows }) {
 }
 
 export function ConciliacaoPage() {
-  const tx = useScopedTx()
+  const { saidas, kpis, categorias, classificar, salvandoId, carregando, erro, toast, setToast } = useConciliacaoViewModel()
   const cards = [
-    { label: 'Conciliados', n: tx.filter((t) => t.recon === 'conciliado').length, to: '/conciliacao/pendencias?estado=conciliado' },
-    { label: 'Pendentes', n: tx.filter((t) => t.recon === 'pendente').length, to: '/conciliacao/pendencias?estado=pendente' },
-    { label: 'Divergentes', n: tx.filter((t) => t.recon === 'divergencia').length, to: '/conciliacao/pendencias?estado=divergencia' },
-    { label: 'Sugestões', n: tx.filter((t) => t.recon === 'sugestao').length, to: '/conciliacao/pendencias?estado=sugestao' },
-    { label: 'Duplicidades', n: tx.filter((t) => t.recon === 'duplicidade').length, to: '/conciliacao/pendencias?estado=duplicidade' },
+    { label: 'Conciliados', n: kpis.conciliado, to: '/conciliacao/pendencias?estado=conciliado' },
+    { label: 'Pendentes', n: kpis.pendente, to: '/conciliacao/pendencias?estado=pendente' },
+    { label: 'Divergentes', n: kpis.divergencia, to: '/conciliacao/pendencias?estado=divergencia' },
+    { label: 'Sugestões', n: kpis.sugestao, to: '/conciliacao/pendencias?estado=sugestao' },
+    { label: 'Duplicidades', n: kpis.duplicidade, to: '/conciliacao/pendencias?estado=duplicidade' },
   ]
 
-  const saidas = useMemo(() => filterSaidas(tx), [tx])
   const gastosPorCategoria = useMemo(() => buildGastoCategoriaRows(saidas), [saidas])
   const iaPorCategoria = useMemo(() => buildIaCategoriaRows(saidas), [saidas])
 
   const saidaMercadorias = useMemo(() => {
     const map = new Map()
-    for (const t of saidas.filter((x) => x.category?.startsWith('C.1'))) {
-      const h = saidaMercadoriasHierarchy(t.category)
-      const key = `${h.categoria}|${h.subcategoria}|${h.subsub}`
+    for (const t of saidas) {
+      const g = gastoChartGroup(t.category)
+      const meta = GASTO_GROUP_META[g] ?? GASTO_GROUP_META.outros
+      const h = { categoria: meta.label, subcategoria: t.category || '—', subsub: '—' }
+      const key = `${h.categoria}|${h.subcategoria}`
       const row = map.get(key) ?? { h, items: [] }
       row.items.push(t)
       map.set(key, row)
     }
-    const order = ['Cerveja', 'Vinho', 'Água', 'Refrigerante', 'Suco', 'Leite', '—']
     return [...map.values()].sort((a, b) => {
-      if (a.h.subcategoria !== b.h.subcategoria) return a.h.subcategoria.localeCompare(b.h.subcategoria, 'pt-BR')
-      const ia = order.indexOf(a.h.subsub)
-      const ib = order.indexOf(b.h.subsub)
-      if (ia >= 0 && ib >= 0) return ia - ib
-      return a.h.subsub.localeCompare(b.h.subsub, 'pt-BR')
+      if (a.h.categoria !== b.h.categoria) return a.h.categoria.localeCompare(b.h.categoria, 'pt-BR')
+      return a.h.subcategoria.localeCompare(b.h.subcategoria, 'pt-BR')
     })
   }, [saidas])
 
@@ -217,6 +212,7 @@ export function ConciliacaoPage() {
         title="Conciliação"
         subtitle="Movimentações de Open Finance, importação e lançamento manual. Categorias são generalistas; valor igual isolado não define correspondência."
       />
+      <ConciliacaoStatus carregando={carregando} erro={erro} />
       <div className="grid gap-4 md:grid-cols-5">
         {cards.map((c) => <Link key={c.label} to={c.to}><Kpi label={c.label} value={String(c.n)} /></Link>)}
       </div>
@@ -232,7 +228,13 @@ export function ConciliacaoPage() {
           title="Conciliação com IA · por categoria"
           subtitle="Expanda uma categoria para editar conciliação e classificação de cada lançamento."
         />
-        <ConciliacaoIaPorCategoriaTable saidas={saidas} rows={iaPorCategoria} />
+        <ConciliacaoIaPorCategoriaTable
+          saidas={saidas}
+          rows={iaPorCategoria}
+          categorias={categorias}
+          classificar={classificar}
+          salvandoId={salvandoId}
+        />
       </Card>
 
       <Card className="overflow-hidden p-0">
@@ -273,19 +275,20 @@ export function ConciliacaoPage() {
           })}
         </Table>
       </Card>
+      <Toast message={toast} />
     </div>
   )
 }
 
 export function ConciliacaoCategoriaDrillPage() {
   const { grupo, sub, folha } = useParams()
-  const tx = useScopedTx()
+  const { saidas, carregando, erro } = useConciliacaoViewModel()
   const { documents } = useAppViewModel()
   const groupId = grupo ?? ''
 
   const saidasGrupo = useMemo(
-    () => filterSaidas(tx).filter((t) => txInGastoGroup(t, groupId)),
-    [tx, groupId],
+    () => saidas.filter((t) => txInGastoGroup(t, groupId)),
+    [saidas, groupId],
   )
 
   const subDef = sub ? findSub(groupId, sub) : undefined
@@ -333,6 +336,7 @@ export function ConciliacaoCategoriaDrillPage() {
     return (
       <div>
         <PageHeader kicker="Conciliação" title={leafDef.label} subtitle={`${subDef.label} · ${meta.label}`} />
+        <ConciliacaoStatus carregando={carregando} erro={erro} />
         <Crumbs />
         <p className="t-apoio mb-4 text-texto-secundario">
           {stats.count} lançamentos · {money(-stats.amount)} · {stats.pend} pendente(s) de conciliação
@@ -346,7 +350,7 @@ export function ConciliacaoCategoriaDrillPage() {
             return (
               <tr key={t.id}>
                 <Td nowrap>{date(t.date)}</Td>
-                <Td><Link to={`/extratos/${t.id}`}>{t.description}</Link></Td>
+                <Td><Link to={`/conciliacao/${t.id}`}>{t.description}</Link></Td>
                 <Td className="num">{money(t.amount)}</Td>
                 <Td><ReconStatusBadge recon={t.recon} /></Td>
                 <Td>
@@ -379,6 +383,7 @@ export function ConciliacaoCategoriaDrillPage() {
     return (
       <div>
         <PageHeader kicker="Conciliação" title={subDef.label} subtitle={meta.label} />
+        <ConciliacaoStatus carregando={carregando} erro={erro} />
         <Crumbs />
         <Table
           columns={['Classificação', 'Lançamentos', 'Valor', 'Conciliados', 'Pendentes']}
@@ -414,6 +419,7 @@ export function ConciliacaoCategoriaDrillPage() {
   return (
     <div>
       <PageHeader kicker="Conciliação" title={meta.label} subtitle="Escolha uma subcategoria para ver classificações e notas fiscais." />
+      <ConciliacaoStatus carregando={carregando} erro={erro} />
       <Crumbs />
       <Table
         columns={['Subcategoria', 'Lançamentos', 'Valor', 'Conciliados', 'Pendentes']}
@@ -438,25 +444,23 @@ export function ConciliacaoCategoriaDrillPage() {
 }
 
 export function ConciliacaoListaPage() {
-  const tx = useScopedTx()
+  const { saidas, carregando, erro } = useConciliacaoViewModel()
   const [params] = useSearchParams()
   const estado = params.get('estado') ?? 'pendente'
-  const rows = tx.filter((t) => t.recon === estado)
+  const rows = saidas.filter((t) => t.recon === estado)
   return (
     <div>
       <PageHeader kicker="Conciliação" title="Pendências de conciliação" />
+      <ConciliacaoStatus carregando={carregando} erro={erro} />
       <Table columns={['Lançamento', 'Transação bancária', 'Valor', 'Status']} empty={!rows.length ? <Empty>Nenhuma pendência neste período.</Empty> : null} footer={<span>Exibindo {rows.length} pendências</span>}>
-        {rows.map((t) => {
-          const exp = expectedEntries.find((e) => e.txId === t.id)
-          return (
-            <tr key={t.id}>
-              <Td>{exp?.description ?? t.description}</Td>
-              <Td><Link to={`/conciliacao/${t.id}`}>{t.counterparty || t.description}</Link></Td>
-              <Td className="num">{money(t.amount)}</Td>
-              <Td><ReconStatusBadge recon={t.recon} /></Td>
-            </tr>
-          )
-        })}
+        {rows.map((t) => (
+          <tr key={t.id}>
+            <Td>{t.description}</Td>
+            <Td><Link to={`/conciliacao/${t.id}`}>{t.counterparty || t.description}</Link></Td>
+            <Td className="num">{money(t.amount)}</Td>
+            <Td><ReconStatusBadge recon={t.recon} /></Td>
+          </tr>
+        ))}
       </Table>
     </div>
   )
@@ -464,16 +468,32 @@ export function ConciliacaoListaPage() {
 
 export function ConciliacaoDetalhePage() {
   const { id } = useParams()
-  const { setRecon, transactions } = useAppViewModel()
+  const { item: t, categorias, classificar, carregando, erro, toast, setToast } = useConciliacaoDetalheViewModel(id)
   const [manual, setManual] = useState(false)
   const [reason, setReason] = useState('')
+  const [categoria, setCategoria] = useState('')
   const [hist, setHist] = useState(false)
   const [cnpjInfo, setCnpjInfo] = useState(null)
   const [cnpjError, setCnpjError] = useState('')
   const [cnpjLoading, setCnpjLoading] = useState(false)
-  const t = transactions.find((x) => x.id === id)
-  const exp = expectedEntries.find((e) => e.txId === id)
-  if (!t) return <Empty>Nenhuma pendência neste período.</Empty>
+
+  if (carregando && !t) {
+    return (
+      <div>
+        <PageHeader kicker="Conciliação" title="Par de conciliação" />
+        <ConciliacaoStatus carregando erro="" />
+      </div>
+    )
+  }
+  if (!t) {
+    return (
+      <div>
+        <PageHeader kicker="Conciliação" title="Par de conciliação" />
+        {erro ? <ConciliacaoStatus carregando={false} erro={erro} /> : null}
+        <Empty>Nenhuma pendência neste período.</Empty>
+      </div>
+    )
+  }
   const foundCnpj = extractCnpj(`${t.document} ${t.description} ${t.counterparty}`)
 
   async function consultCnpj() {
@@ -490,18 +510,25 @@ export function ConciliacaoDetalhePage() {
     setCnpjInfo(result)
   }
 
+  async function confirmarCategoria() {
+    const escolhida = categoria || t.category
+    if (!escolhida) return
+    const ok = await classificar(t.id, escolhida)
+    if (ok) setManual(false)
+  }
+
   return (
     <div>
       <PageHeader kicker="Conciliação" title="Par de conciliação" />
-      {t.recon === 'sugestao' ? <Banner className="mb-4">Sugestão de correspondência. Confira valor, data, documento e contraparte — valor igual isolado não basta.</Banner> : null}
-      {t.recon === 'divergencia' ? <Banner tone="alert" className="mb-4">{exp?.reason ?? 'Valor, data ou contraparte não conferem.'}</Banner> : null}
-      {t.recon === 'duplicidade' ? <Banner tone="alert" className="mb-4">Este lançamento já tem um par com o mesmo documento e valor.</Banner> : null}
+      <ConciliacaoStatus carregando={false} erro={erro} />
+      {t.recon === 'pendente' ? <Banner className="mb-4">Categoria desconhecida ou vazia. Classifique o lançamento para conciliá-lo.</Banner> : null}
       <Card className="space-y-4">
         <Kv items={[
           { label: 'Transação', value: t.description },
           { label: 'Contraparte', value: t.counterparty || '—' },
           { label: 'Valor', value: money(t.amount) },
-          { label: 'Lançamento', value: exp ? `${exp.description} · ${money(exp.amount)}` : 'Sem lançamento vinculado' },
+          { label: 'Categoria', value: t.category || 'Sem categoria' },
+          { label: 'Status', value: reconLabels[t.recon] ?? t.recon },
         ]} />
         {foundCnpj ? (
           <div className="space-y-2">
@@ -517,20 +544,46 @@ export function ConciliacaoDetalhePage() {
           </div>
         ) : null}
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => setRecon(t.id, 'conciliado')}>Aceitar</Button>
-          <Button variant="secondary" onClick={() => setRecon(t.id, 'pendente', 'Sugestão rejeitada')}>Rejeitar</Button>
-          <Button variant="secondary" onClick={() => setManual(true)}>Conciliar manualmente</Button>
+          <Button onClick={() => {
+            if (t.recon === 'conciliado') {
+              setToast('Lançamento já conciliado.')
+              return
+            }
+            setCategoria(t.category || '')
+            setManual(true)
+          }}>Aceitar</Button>
+          <Button variant="secondary" onClick={() => setToast('A conciliação segue a categoria do lançamento.')}>Rejeitar</Button>
+          <Button variant="secondary" onClick={() => { setCategoria(t.category || ''); setManual(true) }}>Conciliar manualmente</Button>
           <Button variant="ghost" onClick={() => setHist(true)}>Histórico</Button>
         </div>
       </Card>
-      <Modal title="Conciliação manual" open={manual} onClose={() => setManual(false)} footer={<><Button variant="secondary" onClick={() => setManual(false)}>Cancelar</Button><Button onClick={() => { if (!reason.trim()) return; setRecon(t.id, 'conciliado', reason); setManual(false) }}>Confirmar</Button></>}>
-        <Field label="Motivo" error={!reason && manual ? 'Informe o motivo da alteração.' : undefined}>
+      <Modal
+        title="Conciliação manual"
+        open={manual}
+        onClose={() => setManual(false)}
+        footer={(
+          <>
+            <Button variant="secondary" onClick={() => setManual(false)}>Cancelar</Button>
+            <Button onClick={confirmarCategoria} disabled={!categoria && !t.category}>Confirmar</Button>
+          </>
+        )}
+      >
+        <Field label="Categoria">
+          <Select value={categoria || t.category || ''} onChange={(e) => setCategoria(e.target.value)}>
+            <option value="">Selecione a categoria</option>
+            {categorias.map((nome) => (
+              <option key={nome} value={nome}>{nome}</option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Motivo">
           <Textarea value={reason} onChange={(e) => setReason(e.target.value)} />
         </Field>
       </Modal>
       <Drawer title="Histórico de conciliação" open={hist} onClose={() => setHist(false)}>
         <p className="t-body">Status atual: {reconLabels[t.recon]}</p>
       </Drawer>
+      <Toast message={toast} />
     </div>
   )
 }

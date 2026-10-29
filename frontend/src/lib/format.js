@@ -45,6 +45,13 @@ export const dateTimeMark = (iso) => {
   return time ? `${date(iso)} • ${time}` : date(iso)
 }
 
+export const weekdayLong = (iso) => {
+  const [y, m, d] = String(iso ?? '').slice(0, 10).split('-').map(Number)
+  if (!y || !m || !d) return ''
+  const label = new Date(y, m - 1, d).toLocaleDateString('pt-BR', { weekday: 'long' })
+  return label ? `${label.charAt(0).toUpperCase()}${label.slice(1)}` : ''
+}
+
 const MONTHS = [
   'janeiro',
   'fevereiro',

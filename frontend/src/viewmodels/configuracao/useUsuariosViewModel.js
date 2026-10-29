@@ -17,7 +17,7 @@ import {
 import { useAppViewModel } from '@/viewmodels/AppViewModel'
 
 export function useUsuariosViewModel() {
-  const { usuario: sessaoUsuario } = useAppViewModel()
+  const { usuario: sessaoUsuario, atualizarSessaoUsuario } = useAppViewModel()
   const sessionId = sessaoUsuario?.id != null ? String(sessaoUsuario.id) : ''
   const [q, setQ] = useState('')
   const [cargo, setCargo] = useState('')
@@ -131,6 +131,7 @@ export function useUsuariosViewModel() {
         if (requireSenha) return [...prev, mapped]
         return prev.map((u) => (u.id === mapped.id ? mapped : u))
       })
+      if (mapped.id && mapped.id === sessionId) atualizarSessaoUsuario(dto)
       setToast('Usuário salvo.')
       closeForm()
     } catch (err) {

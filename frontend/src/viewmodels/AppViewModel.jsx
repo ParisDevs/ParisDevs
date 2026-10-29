@@ -14,6 +14,7 @@ import {
   loadSnapshot,
   persist,
   saveSession,
+  saveToken,
   saveUsuario,
   sessionFromUsuario,
 } from '@/models/session'
@@ -92,6 +93,7 @@ function initialPeriod(stored) {
 export function AppViewModelProvider({ children }) {
   const snap = loadSnapshot()
   const [usuario, setUsuario] = useState(snap.usuario)
+  const [token, setToken] = useState(snap.token)
   const [session, setSession] = useState(snap.session)
   const [scope, setScopeState] = useState(snap.scope === 'grupo' || /^\d+$/.test(String(snap.scope || '')) ? snap.scope : 'grupo')
   const [period, setPeriodState] = useState(initialPeriod(snap.period))
@@ -187,6 +189,7 @@ export function AppViewModelProvider({ children }) {
 
     return {
       usuario,
+      token,
       setUsuario,
       session,
       scope,
@@ -203,19 +206,40 @@ export function AppViewModelProvider({ children }) {
       imports,
       inviteUserNote,
       setInviteUserNote,
-      login: (nextUsuario, remember = true) => {
+      login: ({ usuario: nextUsuario, token: nextToken }, remember = true) => {
+        const next = sessionFromUsuario(nextUsuario)
+        saveUsuario(nextUsuario, remember)
+        saveToken(nextToken, remember)
+        saveSession(next, remember)
+        setUsuario(nextUsuario)
+        setToken(nextToken)
+        setSession(next)
+        return next
+      },
+      atualizarSessaoUsuario: (nextUsuario) => {
+        if (!nextUsuario?.id) return
+        const remember = persist.read('usuario', null) != null || persist.read('token', null) != null
         const next = sessionFromUsuario(nextUsuario)
         saveUsuario(nextUsuario, remember)
         saveSession(next, remember)
         setUsuario(nextUsuario)
         setSession(next)
-        return next
+      },
+      atualizarSessaoUsuario: (nextUsuario) => {
+        if (!nextUsuario?.id) return
+        const remember = persist.read('token', null) != null || persist.read('usuario', null) != null
+        const next = sessionFromUsuario(nextUsuario)
+        saveUsuario(nextUsuario, remember)
+        saveSession(next, remember)
+        setUsuario(nextUsuario)
+        setSession(next)
       },
       logout: () => {
         clearSession()
         persist.remove('scope')
         setSession(null)
         setUsuario(null)
+        setToken(null)
       },
       setScope: (s) => {
         persist.write('scope', s)
@@ -326,7 +350,7 @@ export function AppViewModelProvider({ children }) {
         }
       },
     }
-  }, [session, usuario, scope, period, filiais, recarregarFiliais, txFilter, config, transactions, accounts, documents, schedule, audit, imports, overrides, recon, inviteUserNote])
+  }, [session, usuario, token, scope, period, filiais, recarregarFiliais, txFilter, config, transactions, accounts, documents, schedule, audit, imports, overrides, recon, inviteUserNote])
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }

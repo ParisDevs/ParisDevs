@@ -8,8 +8,16 @@ import { initials } from '@/lib/format'
 import { useAppViewModel } from '@/viewmodels/AppViewModel'
 import { useUsuariosViewModel } from '@/viewmodels/configuracao/useUsuariosViewModel'
 import { useConfiguracaoViewModel } from '@/viewmodels/configuracao/useConfiguracaoViewModel'
+import { usePerfilViewModel } from '@/viewmodels/configuracao/usePerfilViewModel'
 import { useOrganizacaoViewModel } from '@/viewmodels/configuracao/useOrganizacaoViewModel'
-import { formatCnpj, mascararToken } from '@/models/domain/filial'
+import {
+  EXERCICIOS_FISCAIS,
+  FUSOS,
+  PLANOS_CONTAS,
+  REGIMES_TRIBUTARIOS,
+  UFS,
+  formatCnpj,
+} from '@/models/domain/filial'
 import { CardAlso, CheckRow, ConfigCrumbs, SettingsNavCard, SettingsSection } from '@/views/features/configuracao/shell'
 
 function cargoTone(cargo) {
@@ -61,23 +69,58 @@ export function ConfigHomePage() {
 }
 
 export function PerfilPage() {
-  const { admin, nome, email, cargoNome, filialNome } = useConfiguracaoViewModel()
+  const {
+    admin,
+    form,
+    cargoNome,
+    filialNome,
+    nomeExibido,
+    emailExibido,
+    erro,
+    formErro,
+    toast,
+    saving,
+    patchForm,
+    saveForm,
+  } = usePerfilViewModel()
+
   return (
     <div>
-      <PageHeader kicker="Configuração" title="Meu perfil" subtitle="Dados da sessão atual. A alteração cadastral fica no cadastro de usuários." />
+      <PageHeader
+        kicker="Configuração"
+        title="Meu perfil"
+        subtitle="Nome e e-mail no cadastro. Cargo e empresa não mudam aqui."
+      />
       <ConfigCrumbs current="Meu perfil" />
       <Card className="max-w-xl space-y-4">
-        <Banner tone="info">
-          Nome e e-mail vêm do login. Este slice não grava perfil no servidor.
-        </Banner>
-        <Kv
-          items={[
-            { label: 'Nome', value: nome || '—' },
-            { label: 'E-mail', value: email || '—' },
-            { label: 'Cargo', value: cargoNome },
-            { label: 'Filial', value: filialNome || '—' },
-          ]}
-        />
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primaria text-[12px] font-bold text-white">
+            {initials(nomeExibido || emailExibido || 'U')}
+          </span>
+          <div className="min-w-0">
+            <p className="t-h3 truncate">{nomeExibido || '—'}</p>
+            <p className="t-apoio truncate text-texto-secundario">{emailExibido || '—'}</p>
+          </div>
+        </div>
+        {erro ? <p className="t-body text-erro">{erro}</p> : null}
+        <form onSubmit={saveForm} className="space-y-4" noValidate>
+          <Field label="Nome">
+            <Input value={form.nome} onChange={(e) => patchForm('nome', e.target.value)} />
+          </Field>
+          <Field label="E-mail">
+            <Input type="email" value={form.email} onChange={(e) => patchForm('email', e.target.value)} />
+          </Field>
+          <Field label="Cargo">
+            <Input value={cargoNome} readOnly />
+          </Field>
+          <Field label="Filial">
+            <Input value={filialNome} readOnly />
+          </Field>
+          {formErro ? <p className="t-body text-erro">{formErro}</p> : null}
+          <Button type="submit" disabled={saving || Boolean(erro)}>
+            Salvar
+          </Button>
+        </form>
         <CardAlso>
           {admin ? (
             <Link to="/configuracoes/usuarios">
@@ -92,6 +135,7 @@ export function PerfilPage() {
           </Link>
         </CardAlso>
       </Card>
+      <Toast message={toast} />
     </div>
   )
 }
@@ -423,6 +467,15 @@ export function PermissoesPage() {
   )
 }
 
+function FormSection({ title, children }) {
+  return (
+    <div className="space-y-3">
+      <h3 className="t-label tracking-[0.08em] text-texto-secundario uppercase">{title}</h3>
+      {children}
+    </div>
+  )
+}
+
 export function OrganizacaoPage() {
   const {
     admin,
@@ -437,7 +490,12 @@ export function OrganizacaoPage() {
     formMode,
     form,
     formErro,
+    formInfo,
     patchForm,
+    consultarCep,
+    consultarCnpj,
+    buscandoCep,
+    buscandoCnpj,
     openCreate,
     openEdit,
     closeForm,
@@ -492,7 +550,7 @@ export function OrganizacaoPage() {
       {carregando ? <p className="t-body text-texto-secundario">Carregando...</p> : null}
       {!carregando ? (
         <Table
-          columns={['Razão social', 'CNPJ', 'Endereço', 'Token', 'Ações']}
+          columns={['Razão social', 'CNPJ', 'Cidade', 'Ações']}
           empty={
             empty || emptyFiltro ? (
               <Empty action={empty ? <Button onClick={openCreate}>Nova empresa</Button> : undefined}>
@@ -515,8 +573,7 @@ export function OrganizacaoPage() {
             <tr key={f.id}>
               <Td>{f.razaoSocial || '—'}</Td>
               <Td nowrap>{formatCnpj(f.cnpj) || '—'}</Td>
-              <Td>{f.endereco || '—'}</Td>
-              <Td>{mascararToken(f.token)}</Td>
+              <Td>{f.cidade ? `${f.cidade}/${f.uf || ''}`.replace(/\/$/, '') : f.endereco || '—'}</Td>
               <Td>
                 <div className="flex flex-wrap gap-1">
                   <Button variant="ghost" className="h-8 px-2" title="Editar" aria-label="Editar" onClick={() => openEdit(f)}>
@@ -532,12 +589,9 @@ export function OrganizacaoPage() {
         </Table>
       ) : null}
       <Modal
+        wide
         title={formMode === 'criar' ? 'Nova empresa' : 'Editar empresa'}
-        subtitle={
-          formMode === 'criar'
-            ? 'Informe os dados da empresa. O seletor da topbar passa a listá-la ao salvar.'
-            : 'Altere os dados. O CNPJ deve ter 14 dígitos. O token é obrigatório.'
-        }
+        subtitle="Cadastro da unidade no Grupo Paris 6. A situação cadastral vem da consulta pública ao CNPJ."
         open={!!formMode}
         onClose={closeForm}
         footer={
@@ -551,24 +605,162 @@ export function OrganizacaoPage() {
           </>
         }
       >
-        <form id="empresa-form-dialog" onSubmit={saveForm} className="space-y-4" noValidate>
-          <Field label="Razão social">
-            <Input value={form.razaoSocial} onChange={(e) => patchForm('razaoSocial', e.target.value)} />
-          </Field>
-          <Field label="CNPJ">
-            <Input value={form.cnpj} onChange={(e) => patchForm('cnpj', e.target.value)} inputMode="numeric" />
-          </Field>
-          <Field label="Endereço">
-            <Input value={form.endereco} onChange={(e) => patchForm('endereco', e.target.value)} />
-          </Field>
-          <Field label="Token">
-            <Input
-              type="password"
-              value={form.token}
-              onChange={(e) => patchForm('token', e.target.value)}
-              autoComplete="off"
-            />
-          </Field>
+        <form id="empresa-form-dialog" onSubmit={saveForm} className="space-y-6" noValidate>
+          <FormSection title="Dados da empresa">
+            <Field label="Razão social *">
+              <Input value={form.razaoSocial} onChange={(e) => patchForm('razaoSocial', e.target.value)} />
+            </Field>
+            <Field label="Nome fantasia *">
+              <Input value={form.nomeFantasia} onChange={(e) => patchForm('nomeFantasia', e.target.value)} />
+            </Field>
+            <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+              <Field label="CNPJ *">
+                <Input value={form.cnpj} onChange={(e) => patchForm('cnpj', e.target.value)} inputMode="numeric" />
+              </Field>
+              <Button type="button" variant="secondary" onClick={() => consultarCnpj()} disabled={buscandoCnpj}>
+                {buscandoCnpj ? 'Consultando...' : 'Consultar CNPJ'}
+              </Button>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Inscrição estadual">
+                <Input value={form.inscricaoEstadual} onChange={(e) => patchForm('inscricaoEstadual', e.target.value)} />
+              </Field>
+              <Field label="Inscrição municipal">
+                <Input value={form.inscricaoMunicipal} onChange={(e) => patchForm('inscricaoMunicipal', e.target.value)} />
+              </Field>
+            </div>
+            <Field label="Regime tributário *">
+              <Select value={form.regimeTributario} onChange={(e) => patchForm('regimeTributario', e.target.value)}>
+                {REGIMES_TRIBUTARIOS.map((regime) => (
+                  <option key={regime} value={regime}>
+                    {regime}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="CNAE principal">
+              <Input value={form.cnaePrincipal} onChange={(e) => patchForm('cnaePrincipal', e.target.value)} />
+            </Field>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Data de abertura">
+                <Input type="date" value={form.dataAbertura} onChange={(e) => patchForm('dataAbertura', e.target.value)} />
+              </Field>
+              <Field label="Situação cadastral">
+                <Input value={form.situacaoCadastral} readOnly />
+              </Field>
+            </div>
+          </FormSection>
+
+          <FormSection title="Endereço">
+            <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+              <Field label="CEP *">
+                <Input value={form.cep} onChange={(e) => patchForm('cep', e.target.value)} inputMode="numeric" />
+              </Field>
+              <Button type="button" variant="secondary" onClick={() => consultarCep()} disabled={buscandoCep}>
+                {buscandoCep ? 'Buscando...' : 'Buscar CEP'}
+              </Button>
+            </div>
+            <Field label="Logradouro *">
+              <Input value={form.logradouro} onChange={(e) => patchForm('logradouro', e.target.value)} />
+            </Field>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field label="Número *">
+                <Input value={form.numero} onChange={(e) => patchForm('numero', e.target.value)} />
+              </Field>
+              <Field label="Complemento">
+                <Input value={form.complemento} onChange={(e) => patchForm('complemento', e.target.value)} />
+              </Field>
+              <Field label="Bairro *">
+                <Input value={form.bairro} onChange={(e) => patchForm('bairro', e.target.value)} />
+              </Field>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field label="Cidade *">
+                <Input value={form.cidade} onChange={(e) => patchForm('cidade', e.target.value)} />
+              </Field>
+              <Field label="Estado (UF) *">
+                <Select value={form.uf} onChange={(e) => patchForm('uf', e.target.value)}>
+                  {UFS.map((uf) => (
+                    <option key={uf} value={uf}>
+                      {uf}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="País *">
+                <Input value={form.pais} onChange={(e) => patchForm('pais', e.target.value)} />
+              </Field>
+            </div>
+          </FormSection>
+
+          <FormSection title="Responsável pela empresa">
+            <Field label="Nome completo *">
+              <Input value={form.responsavelNome} onChange={(e) => patchForm('responsavelNome', e.target.value)} />
+            </Field>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="CPF *">
+                <Input value={form.responsavelCpf} onChange={(e) => patchForm('responsavelCpf', e.target.value)} inputMode="numeric" />
+              </Field>
+              <Field label="Telefone *">
+                <Input value={form.responsavelTelefone} onChange={(e) => patchForm('responsavelTelefone', e.target.value)} inputMode="tel" />
+              </Field>
+            </div>
+            <Field label="E-mail corporativo *">
+              <Input type="email" value={form.responsavelEmail} onChange={(e) => patchForm('responsavelEmail', e.target.value)} />
+            </Field>
+            <Field label="Cargo ou função *">
+              <Input value={form.responsavelCargo} onChange={(e) => patchForm('responsavelCargo', e.target.value)} />
+            </Field>
+          </FormSection>
+
+          <FormSection title="Configurações financeiras">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Moeda padrão *">
+                <Select value={form.moedaPadrao} onChange={(e) => patchForm('moedaPadrao', e.target.value)}>
+                  <option value="BRL">BRL — Real</option>
+                </Select>
+              </Field>
+              <Field label="Fuso horário *">
+                <Select value={form.fusoHorario} onChange={(e) => patchForm('fusoHorario', e.target.value)}>
+                  {FUSOS.map((fuso) => (
+                    <option key={fuso} value={fuso}>
+                      {fuso}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+            <Field label="Plano de contas *">
+              <Select value={form.planoContas} onChange={(e) => patchForm('planoContas', e.target.value)}>
+                {PLANOS_CONTAS.map((plano) => (
+                  <option key={plano} value={plano}>
+                    {plano}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Início da operação no sistema *">
+                <Input type="date" value={form.dataInicioOperacao} onChange={(e) => patchForm('dataInicioOperacao', e.target.value)} />
+              </Field>
+              <Field label="Exercício fiscal *">
+                <Select value={form.exercicioFiscal} onChange={(e) => patchForm('exercicioFiscal', e.target.value)}>
+                  {EXERCICIOS_FISCAIS.map((exercicio) => (
+                    <option key={exercicio} value={exercicio}>
+                      {exercicio}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+            <Field label="Centro de custo padrão">
+              <Input value={form.centroCustoPadrao} onChange={(e) => patchForm('centroCustoPadrao', e.target.value)} />
+            </Field>
+            <Field label="Empresas e filiais vinculadas">
+              <Input value={form.empresasVinculadas} onChange={(e) => patchForm('empresasVinculadas', e.target.value)} />
+            </Field>
+          </FormSection>
+          {formInfo ? <p className="t-apoio text-texto-secundario">{formInfo}</p> : null}
           {formErro ? <p className="t-body text-erro">{formErro}</p> : null}
         </form>
       </Modal>

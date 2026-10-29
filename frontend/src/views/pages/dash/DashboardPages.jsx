@@ -69,6 +69,8 @@ export function DashboardPage() {
     syncedAccounts,
     money,
     month,
+    date,
+    weekdayLong,
     dateTimeMark,
     vsHint,
     toneFor,
@@ -88,6 +90,19 @@ export function DashboardPage() {
               : 'Visão financeira'
           }
           subtitle="Conecte uma instituição ou importe um extrato para ver os indicadores."
+          meta={
+            lastSync ? (
+              <div className="flex items-start justify-end gap-2">
+                <CalendarDays size={15} className="mt-0.5 shrink-0 text-faint" />
+                <div className="whitespace-nowrap text-right">
+                  <span className="block text-[11px] font-semibold tracking-[0.06em] text-faint uppercase">
+                    {weekdayLong(lastSync)}
+                  </span>
+                  <span className="mt-0.5 block text-texto-secundario">{dateTimeMark(lastSync)}</span>
+                </div>
+              </div>
+            ) : null
+          }
         />
 
         <Empty
@@ -121,9 +136,9 @@ export function DashboardPage() {
                 size={15}
                 className="mt-0.5 shrink-0 text-faint"
               />
-              <div className="whitespace-nowrap">
+              <div className="whitespace-nowrap text-right">
                 <span className="block text-[11px] font-semibold tracking-[0.06em] text-faint uppercase">
-                  Última atualização
+                  {weekdayLong(lastSync)}
                 </span>
                 <span className="mt-0.5 block text-texto-secundario">
                   {dateTimeMark(lastSync)}
@@ -233,7 +248,7 @@ export function DashboardPage() {
           icon={CalendarDays}
           label="Entradas do dia"
           value={valorLocal(today.entradas)}
-          hint={TODAY}
+          hint={date(TODAY)}
           to="/extratos"
           tip="Créditos na data de referência da demonstração."
         />
@@ -242,7 +257,7 @@ export function DashboardPage() {
           icon={CalendarDays}
           label="Saídas do dia"
           value={valorLocal(today.saidas)}
-          hint={TODAY}
+          hint={date(TODAY)}
           to="/extratos"
           tip="Débitos na data de referência da demonstração."
         />

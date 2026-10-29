@@ -13,6 +13,7 @@ import {
   FileText,
   Landmark,
   LayoutDashboard,
+  LayoutGrid,
   PieChart,
   Plug,
   LogOut,
@@ -23,6 +24,7 @@ import {
   Store,
   TrendingUp,
   Search,
+  Users,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
@@ -96,6 +98,12 @@ const ANALISE_MORE = [
 ]
 const ANALISE_ITEMS = [ANALISE_PRIMARY, ...ANALISE_MORE]
 
+const MODULES = [
+  { to: '/configuracoes/usuarios', label: 'Cadastro de usuários', icon: Users },
+  { to: '/configuracoes/organizacao', label: 'Cadastro de empresa', icon: Building2 },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+]
+
 function navSectionActive(items, pathname) {
   return items.some((item) => (item.to === '/dashboard' ? pathname === '/dashboard' : pathname === item.to || pathname.startsWith(`${item.to}/`)))
 }
@@ -113,6 +121,8 @@ export function AppShell() {
   const [analiseOpen, setAnaliseOpen] = useState(() => navSectionActive(ANALISE_MORE, location.pathname))
   const [userMenu, setUserMenu] = useState(false)
   const userMenuRef = useRef(null)
+  const [modulesMenu, setModulesMenu] = useState(false)
+  const modulesMenuRef = useRef(null)
   const [open, setOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -171,7 +181,8 @@ export function AppShell() {
 
   useEffect(() => {
     function onDocClick(e) {
-      if (!userMenuRef.current?.contains(e.target )) setUserMenu(false)
+      if (!userMenuRef.current?.contains(e.target)) setUserMenu(false)
+      if (!modulesMenuRef.current?.contains(e.target)) setModulesMenu(false)
     }
     document.addEventListener('mousedown', onDocClick)
     return () => document.removeEventListener('mousedown', onDocClick)
@@ -375,6 +386,44 @@ export function AppShell() {
             </div>
 
             <div className="ml-auto flex shrink-0 items-center gap-1.5">
+              <div className="relative" ref={modulesMenuRef}>
+                <button
+                  type="button"
+                  className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-[6px] text-texto-secundario hover:bg-superficie-2"
+                  onClick={() => setModulesMenu((v) => !v)}
+                  title="Módulos"
+                  aria-label="Módulos"
+                  aria-expanded={modulesMenu}
+                  aria-haspopup="menu"
+                >
+                  <LayoutGrid size={16} />
+                </button>
+                {modulesMenu ? (
+                  <div
+                    role="menu"
+                    className="absolute top-[calc(100%+8px)] right-0 z-30 min-w-[220px] rounded-[12px] border border-borda bg-superficie py-1 shadow-[0_8px_24px_rgba(13,31,27,0.12)]"
+                  >
+                    {MODULES.map((item) => {
+                      const Icon = item.icon
+                      return (
+                        <button
+                          key={item.to}
+                          type="button"
+                          role="menuitem"
+                          className="t-body flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-superficie-2"
+                          onClick={() => {
+                            setModulesMenu(false)
+                            navigate(item.to)
+                          }}
+                        >
+                          <Icon size={15} strokeWidth={1.7} className="text-texto-secundario" />
+                          {item.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                ) : null}
+              </div>
               <button type="button" className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-[6px] text-texto-secundario hover:bg-superficie-2" onClick={() => navigate('/alertas')} aria-label="Notificações">
                 <Bell size={16} />
               </button>

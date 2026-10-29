@@ -1,8 +1,13 @@
+function pad2(value) {
+  return String(value).padStart(2, '0')
+}
+
 export function isoDateToday(from = new Date()) {
-  const y = from.getFullYear()
-  const m = String(from.getMonth() + 1).padStart(2, '0')
-  const d = String(from.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
+  return `${from.getFullYear()}-${pad2(from.getMonth() + 1)}-${pad2(from.getDate())}`
+}
+
+export function isoDateTimeNow(from = new Date()) {
+  return `${isoDateToday(from)}T${pad2(from.getHours())}:${pad2(from.getMinutes())}:${pad2(from.getSeconds())}`
 }
 
 export function currentMonth(from = new Date()) {

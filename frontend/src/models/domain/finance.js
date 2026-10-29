@@ -158,11 +158,12 @@ export const SEED_CATEGORIES = [
   'Tarifas bancárias',
 ]
 
-export function categoriaCatalogo() {
+export function categoriaCatalogo(extras = []) {
   const folhas = chartOfAccounts
     .filter((c) => !chartOfAccounts.some((ch) => ch.parent === c.code))
     .map((c) => c.name)
-  return [...new Set([...SEED_CATEGORIES, ...folhas])].sort((a, b) => a.localeCompare(b, 'pt-BR'))
+  const fromOps = extras.map((value) => String(value ?? '').trim()).filter(Boolean)
+  return [...new Set([...SEED_CATEGORIES, ...folhas, ...fromOps])].sort((a, b) => a.localeCompare(b, 'pt-BR'))
 }
 
 export function saidaMercadoriasHierarchy(code) {

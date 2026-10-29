@@ -17,11 +17,25 @@ export function mapConta(dto) {
     connected: ativo,
     status: ativo ? 'ok' : 'erro',
     companyId: dto?.filial?.idFilial ?? null,
+    filialNome: String(dto?.filial?.razaoSocial ?? '').trim(),
+    codigoBanco: String(dto?.codigoBanco ?? '').trim(),
+    agencia: String(dto?.agencia ?? '').trim(),
+    agenciaDigito: String(dto?.agenciaDigito ?? '').trim(),
+    tipoConta: String(dto?.tipoConta ?? '').trim(),
+    cpfCnpjTitular: String(dto?.cpfCnpjTitular ?? '').trim(),
+    nomeTitular: String(dto?.nomeTitular ?? '').trim(),
+    ativo,
   }
 }
 
 export function mapOperacao(dto, contasById = {}) {
-  const tipo = dto?.tipoOperacao
+  const tipoRaw = dto?.tipoOperacao
+  const tipo =
+    tipoRaw === 1 || tipoRaw === '1' || tipoRaw === 'PAGAMENTO'
+      ? 'PAGAMENTO'
+      : tipoRaw === 0 || tipoRaw === '0' || tipoRaw === 'RECEBIMENTO'
+        ? 'RECEBIMENTO'
+        : tipoRaw
   const raw = Number(dto?.valorOperacao ?? 0)
   const amount = Math.abs(Number.isFinite(raw) ? raw : 0)
   const iso = dto?.dtHora ? String(dto.dtHora) : ''
@@ -45,6 +59,7 @@ export function mapOperacao(dto, contasById = {}) {
     competence: date.slice(0, 7),
     entrada: tipo === 'RECEBIMENTO',
     saida: tipo === 'PAGAMENTO',
+    recon: deriveRecon(String(dto?.categoria ?? '').trim()),
   }
 }
 
@@ -62,12 +77,13 @@ export function mapConciliacao(dto, contasById = {}) {
 }
 
 export function payloadClassificacao(op, categoria) {
-  const dtHora = op.dtHora ? (op.dtHora.length === 16 ? `${op.dtHora}:00` : String(op.dtHora).slice(0, 19)) : null
+  const raw = String(op?.dtHora ?? '').replace(' ', 'T').replace('Z', '')
+  const dtHora = raw.length === 16 ? `${raw}:00` : raw.slice(0, 19) || null
   return {
     valorOperacao: op.amount,
     tipoOperacao: op.tipo,
     razaoSocial: op.razaoSocial,
-    categoria,
+    categoria: String(categoria ?? '').trim(),
     dtHora,
     idContaBancaria: Number(op.accountId),
   }

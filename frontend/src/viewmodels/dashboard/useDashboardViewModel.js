@@ -14,8 +14,9 @@ import {
   periodMoves,
   scopedAccounts,
 } from '@/models/domain/dashboardBanking'
-import { currentMonth, isoDateToday, periodRange, previousMonth } from '@/lib/period'
-import { dateTimeMark, month, money, signedPercent } from '@/lib/format'
+import { deriveRecon } from '@/models/domain/finance'
+import { currentMonth, isoDateTimeNow, isoDateToday, periodRange, previousMonth } from '@/lib/period'
+import { date, dateTimeMark, month, money, percent, signedPercent, weekdayLong } from '@/lib/format'
 import { useAppViewModel } from '@/viewmodels/AppViewModel'
 
 function delta(current, previous) {
@@ -61,6 +62,7 @@ export function useDashboardViewModel() {
   const [kpisApi, setKpisApi] = useState(null)
   const [carregandoKpis, setCarregandoKpis] = useState(true)
   const [erroKpis, setErroKpis] = useState(false)
+  const [lastSync, setLastSync] = useState(() => isoDateTimeNow())
 
   useEffect(() => {
     setBank('')
@@ -95,7 +97,10 @@ export function useDashboardViewModel() {
           setOperacoes([])
         }
       } finally {
-        if (ativo) setCarregandoKpis(false)
+        if (ativo) {
+          setCarregandoKpis(false)
+          setLastSync(isoDateTimeNow())
+        }
       }
     }
     carregar()
@@ -128,7 +133,13 @@ export function useDashboardViewModel() {
   const cons = consolidatedBalance(filteredAccounts.length ? filteredAccounts : allScoped)
   const moves = periodMoves(filteredOps, inicio, fim)
   const today = dayMoves(filteredOps, TODAY)
-  const pendingRecon = { count: 0, amount: 0 }
+  const pendingOps = moves.rows.filter((t) => deriveRecon(t.category) === 'pendente')
+  const pendingSaidas = pendingOps.filter((t) => t.saida)
+  const pendingRecon = {
+    count: pendingSaidas.length,
+    amount: pendingSaidas.reduce((s, t) => s + t.amount, 0),
+  }
+  const disconnected = allScoped.filter((a) => a.connected === false)
   const prevPeriod = previousMonth(period, months)
   const prevRange = (() => {
     try {
@@ -147,17 +158,58 @@ export function useDashboardViewModel() {
   const expensePie = categoryPie(filteredOps, inicio, fim, 'saida')
   const revenuePie = categoryPie(filteredOps, inicio, fim, 'entrada')
   const reconPie = []
-  const scopedAlerts = []
-  const insights = []
-  const firstName = usuario?.nome?.split(' ')[0] ?? ''
-  const lastSync = ''
-  const syncedPool = filteredAccounts.length ? filteredAccounts : allScoped
-  const syncedAccounts = syncedPool.filter((a) => a.connected && !a.balanceUnavailable).slice(0, 3)
   const recChange = delta(moves.entradas, prevMoves.entradas)
   const expChange = delta(moves.saidas, prevMoves.saidas)
+  const scopedAlerts = []
+  if (pendingOps.length) {
+    scopedAlerts.push({
+      id: 'uncl',
+      group: 'atencao',
+      title: `${pendingOps.length} lançamento(s) sem classificação`,
+      link: '/ia/fila',
+    })
+  }
+  if (pendingSaidas.length) {
+    scopedAlerts.push({
+      id: 'recon',
+      group: 'atencao',
+      title: `${pendingSaidas.length} pagamento(s) pendente(s) de conciliação`,
+      link: '/conciliacao/pendencias',
+    })
+  }
+  disconnected.forEach((a) => {
+    scopedAlerts.push({
+      id: `sync-${a.id}`,
+      group: 'critico',
+      title: `Instituição desconectada — ${a.bank} ${a.number}`,
+      link: '/conexoes',
+    })
+  })
+  const insights = []
+  if (recChange != null) {
+    insights.push({
+      tone: recChange >= 0 ? 'success' : 'info',
+      text: `A receita ${recChange >= 0 ? 'cresceu' : 'caiu'} ${percent(Math.abs(recChange) * 100)} em ${periodLabel} frente ao mês anterior.`,
+    })
+  }
+  if (pendingSaidas.length) {
+    insights.push({
+      tone: 'warning',
+      text: `${pendingSaidas.length} pagamentos de ${periodLabel} ainda estão sem categoria na conciliação.`,
+    })
+  }
+  if (disconnected.length) {
+    insights.push({
+      tone: 'danger',
+      text: `A conta ${disconnected[0].bank} ${disconnected[0].number} está desconectada e o saldo não entra no consolidado.`,
+    })
+  }
+  const firstName = usuario?.nome?.split(' ')[0] ?? ''
+  const syncedPool = filteredAccounts.length ? filteredAccounts : allScoped
+  const syncedAccounts = syncedPool.filter((a) => a.connected && !a.balanceUnavailable).slice(0, 3)
   const pending = [
-    { label: 'Classificações aguardando revisão', n: 0, to: '/ia/fila' },
-    { label: 'Pendências de conciliação', n: 0, to: '/conciliacao/pendencias' },
+    { label: 'Classificações aguardando revisão', n: pendingOps.length, to: '/ia/fila' },
+    { label: 'Pendências de conciliação', n: pendingSaidas.length, to: '/conciliacao/pendencias' },
     { label: 'Bancos sem sincronização', n: cons.missing.length, to: '/conexoes' },
     { label: 'Documentos inconsistentes', n: 0, to: '/documentos?filtro=inconsistente' },
   ]
@@ -221,6 +273,8 @@ export function useDashboardViewModel() {
     syncedAccounts,
     money,
     month,
+    date,
+    weekdayLong,
     dateTimeMark,
     vsHint,
     toneFor,
@@ -231,13 +285,12 @@ export function useDashboardViewModel() {
 }
 
 export function usePendenciasViewModel() {
+  const {
+    pending,
+    pendingTotal,
+  } = useDashboardViewModel()
   return {
-    cards: [
-      { label: 'Classificações aguardando revisão', n: 0, to: '/ia/fila' },
-      { label: 'Pendências de conciliação', n: 0, to: '/conciliacao/pendencias' },
-      { label: 'Bancos sem sincronização', n: 0, to: '/conexoes' },
-      { label: 'Documentos inconsistentes', n: 0, to: '/documentos?filtro=inconsistente' },
-    ],
-    total: 0,
+    cards: pending,
+    total: pendingTotal,
   }
 }
