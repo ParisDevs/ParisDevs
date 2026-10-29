@@ -2,7 +2,7 @@
 
 Website interno de gestão financeira do Grupo Paris 6. Stack: React 19 (JSX), Vite 8, Tailwind CSS v4, Recharts, React Router 7 e axios.
 
-A API Spring Boot precisa estar em `http://localhost:8080`. Com `VITE_API_URL` vazio, o Vite faz proxy de `/usuarios`, `/filiais`, `/contasBancarias`, `/operacoes` e `/dashboard/kpis`.
+A API Spring Boot precisa estar em `http://localhost:8080`. Com `VITE_API_URL` vazio, o Vite faz proxy de `/usuarios`, `/filiais`, `/contasBancarias`, `/operacoes`, `/dashboard/kpis` e `/dre`.
 
 ## Arquitetura (MVVM)
 
@@ -12,7 +12,9 @@ A API Spring Boot precisa estar em `http://localhost:8080`. Com `VITE_API_URL` v
 - **`src/models/`** — `api/` (HTTP), `domain/` (regras), fixtures e sessão (`pd.usuario`, `pd.token`).
 - **`src/lib/`** — formatação pt-BR e i18n do login.
 
-Telas na API: login, dashboard, operações, conciliação, usuários, organização e contas bancárias. Extratos, DRE, fluxo de caixa, alertas e conexões ainda usam fixture / `localStorage`.
+Telas na API: login, dashboard, operações, conciliação, usuários, perfil (foto), organização, contas bancárias e DRE diária (D-1 + histórico). Extratos, DRE comparativa, fluxo de caixa, alertas e conexões ainda usam fixture / `localStorage`.
+
+Tema claro/escuro: `pd.config.theme` (`light` | `dark`). Escuro usa paleta preta; claro mantém sage/floresta. Toggle na topbar e em Preferências.
 
 ## Como rodar
 

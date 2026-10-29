@@ -94,11 +94,13 @@ Contas de seed: Itaú, XP, BTG Pactual, Bradesco e Santander (uma inativa). Oper
 
 ### Ligado à API
 
-Login, dashboard, operações, conciliação, usuários, organização (filiais) e contas bancárias (cadastro e agrupamento em Bancos).
+Login, dashboard, operações, conciliação, usuários, perfil (foto), organização (filiais), contas bancárias (cadastro e agrupamento em Bancos) e **DRE diária (D-1) + histórico**.
 
 ### Ainda local (fixtures / `localStorage`)
 
-Extratos, documentos, DRE, fluxo de caixa, alertas, conexões (Open Finance simulado), IA, contas a pagar/receber e parâmetros locais de configuração.
+Extratos, documentos, DRE comparativa, fluxo de caixa, alertas, conexões (Open Finance simulado), IA e parâmetros locais de configuração (tema, notificações).
+
+Contas a pagar, contas a receber e plano de contas estão **comentados** no menu e nas rotas (código permanece no repositório).
 
 Onde a especificação fala de AWS, mensageria ou Open Finance real, trate como **destino**, não como código já entregue.
 
@@ -147,7 +149,7 @@ npm install
 npm run dev
 ```
 
-Abre em `http://localhost:5173` (ou a próxima porta livre, por exemplo `5174`). Com `VITE_API_URL` vazio, o Vite faz proxy dos endpoints da API para `:8080`.
+Abre em `http://localhost:5173` (ou a próxima porta livre, por exemplo `5174`). Com `VITE_API_URL` vazio, o Vite faz proxy de `/usuarios`, `/filiais`, `/contasBancarias`, `/operacoes`, `/dashboard/kpis` e `/dre` para `:8080`.
 
 | Comando | Efeito |
 |---|---|
@@ -184,8 +186,9 @@ Sessão: `pd.usuario` e `pd.token` no `localStorage`. Token vale 8 horas. 401 li
 
 ## Recorte, período e atalhos
 
-- **Topbar:** grupo ou filial e mês (`YYYY-MM`). O recorte vale para dashboard, operações, conciliação e contas.
-- **Menu:** Operação, Análise, Configuração. A lista rola; **Sair** e o Grupo Paris 6 ficam no rodapé.
+- **Topbar:** grupo ou filial e mês (`YYYY-MM`). O recorte vale para dashboard, operações, conciliação e contas. A DRE diária **ignora o mês** da topbar (usa D-1 em `America/Sao_Paulo`) e só recorta as linhas pela empresa/filial.
+- **Tema:** ícone sol/lua na topbar (e em Preferências). Claro = sage/floresta; escuro = preto. A escolha fica em `pd.config` neste navegador.
+- **Menu:** Operação, Análise (Relatórios + Histórico DRE), Configuração. A lista rola; **Sair** e o Grupo Paris 6 ficam no rodapé.
 - **Sair:** confirma e encerra a sessão.
 - **Assistente (IA):** botão circular no canto inferior direito. Localiza saldo, DRE, conciliação, classificação e conexões — não classifica sozinho.
 
@@ -223,16 +226,19 @@ Rotas públicas não exigem sessão. As demais passam por `ProtectedRoute` (usu�
 | `/extratos` · `/extratos/importar` | Movimentações e importação | fixture |
 | `/documentos` | Central de documentos | fixture |
 | `/ia` · `/ia/fila` · `/ia/revisao/:id` | Classificação e revisão humana | fixture |
-| `/contas-a-pagar` · `/contas-a-receber` | Agenda | fixture |
+| `/contas-a-pagar` · `/contas-a-receber` | Agenda | comentado |
 
 ### Análise e configuração
 
 | Caminho | Tela | Dados |
 |---|---|---|
-| `/dre` · `/dre/comparativa` | DRE gerencial | fixture |
+| `/dre` | DRE diária até D-1 | API |
+| `/dre/historico` · `/dre/historico/:data` | Snapshots gravados | API |
+| `/dre/comparativa` | DRE comparativa | fixture |
 | `/fluxo-de-caixa` | Caixa realizado | fixture |
 | `/analytics` · `/alertas` | Indicadores e alertas | fixture |
-| `/plano-de-contas` | Plano gerencial | fixture |
+| `/plano-de-contas` | Plano gerencial | comentado |
+| `/configuracoes/preferencias` | Tema claro/escuro e alertas | local |
 | `/configuracoes/*` | Demais parâmetros locais | misto |
 
 Mapa completo: [wiki/Rotas.md](wiki/Rotas.md).
@@ -244,7 +250,7 @@ Mapa completo: [wiki/Rotas.md](wiki/Rotas.md).
 Regras de produto em `frontend/src/models/domain/`. Persistência e contrato HTTP em `backend/` e `frontend/src/models/api/`.
 
 - **Caixa / extrato:** o que entrou ou saiu na conta, na data bancária.
-- **DRE gerencial:** só lançamento **classificado**. Não é o saldo bancário.
+- **DRE gerencial diária:** acumulado do mês civil até D-1. `receita_total` = recebimentos; `receita_liquida` = × 0,87; mercadorias = pagamentos cuja categoria (ou razão) casa com o conjunto em `DreRegras` / `models/domain/dre.js`; resultado = líquida − todos os pagamentos. Snapshot em `dre_diario` (`UNIQUE` data + filial). GET usa snapshot se existir; senão calcula ao vivo e não grava. POST `/dre/gerar` faz UPSERT.
 - Transferência interna, aplicação e resgate **não** entram como receita ou despesa.
 - Documento e extrato **não** compartilham a mesma lista.
 - Conta inativa **não** entra no saldo consolidado como zero.
@@ -266,6 +272,7 @@ navegador  →  frontend (React JSX, MVVM)
 API         →  PostgreSQL PARIS_DEVS
                  ↳ filial → usuario
                  ↳ filial → conta_bancaria → operacao
+                 ↳ filial → dre_diario (snapshot D-1)
 ```
 
 Princípios (especificação): desacoplar banco específico do motor; não fixar no código limite, plano ou provedor que pertence à configuração; trilha em toda reclassificação; processamentos pesados, quando existirem, assíncronos.
@@ -304,6 +311,7 @@ Pacote: `com.parisdevs.api`.
 | Contas bancárias | `/contasBancarias` | CRUD |
 | Operações | `/operacoes` | CRUD |
 | Dashboard | `GET /dashboard/kpis` | KPIs do recorte (`inicio`, `fim`) |
+| DRE | `/dre` · `/dre/historico` · `POST /dre/gerar` | Diária D-1 e snapshots |
 | Swagger | `/swagger-ui.html` | OpenAPI; Authorize Bearer |
 
 Demais rotas da API exigem JWT. CORS libera `http://localhost:5173` e `5174`.
@@ -314,11 +322,13 @@ Camadas: `controller` → `service` → `repository`, com `dto`, `mapper`, `enti
 
 ## Identidade visual
 
-- Sidebar floresta `#062921`, canvas sage `#f3f7f5`, ouro `#c9b07a` na marca.
+- **Claro:** sidebar floresta `#062921`, canvas sage `#f3f7f5`, ouro `#c9b07a` na marca.
+- **Escuro:** fundo e cards pretos/cinza (`#0a0a0a` / `#141414`); sidebar preta. Sem véu verde.
+- Tema no ícone da topbar ou em Configurações → Preferências (`html[data-theme]`).
 - Aplicação: **Inter**. Landing: **Manrope** + **Cormorant Garamond**.
-- Landing em `/` com o texto **PARIS DEVS** (sem o selo do restaurante).
-- Selo do grupo no rodapé do menu interno (`public/brand/paris6.png`).
-- Logotipos de banco em `frontend/public/banks/`.
+- Landing em `/` com o texto **PARIS DEVS** (sem o selo do restaurante); a landing permanece clara.
+- Selo do grupo no rodapé do menu interno (`public/brand/paris6-bistro.png`).
+- Logotipos de banco em `frontend/public/banks/` (círculo). Avatar do perfil em `public/avatars/`.
 
 ---
 
