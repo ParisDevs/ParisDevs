@@ -1,66 +1,37 @@
-
 package com.parisdevs.api.repository;
 
+import com.parisdevs.api.entity.ContaBancaria;
+import com.parisdevs.api.enums.TipoOperacao;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
-public interface DashboardRepository
-        extends Repository<com.parisdevs.api.entity.ContaBancaria, Long> {
+public interface DashboardRepository extends Repository<ContaBancaria, Long> {
 
-    interface DashboardKpiProjection {
-        BigDecimal getSaldoConsolidado();
-        BigDecimal getEntradas();
-        BigDecimal getSaidas();
-        BigDecimal getResultado();
-    }
+    @Query("""
+            SELECT COALESCE(SUM(cb.saldo), 0)
+            FROM ContaBancaria cb
+            WHERE cb.ativo = true
+              AND cb.saldo IS NOT NULL
+              AND (:idFilial IS NULL OR cb.filial.idFilial = :idFilial)
+            """)
+    BigDecimal saldoConsolidado(@Param("idFilial") Integer idFilial);
 
-    @Query(value = """
-        SELECT
-            (SELECT COALESCE(SUM(cb.saldo), 0)
-             FROM contabancaria cb
-             WHERE (:idFilial IS NULL OR cb.filial_id = :idFilial)
-            ) AS "saldoConsolidado",
-
-            (SELECT COALESCE(SUM(r.valor), 0)
-             FROM receita r
-             JOIN contabancaria cb ON cb.id = r.conta_bancaria_id
-             WHERE r.data_receita >= :inicio
-               AND r.data_receita < :fim
-               AND (:idFilial IS NULL OR cb.filial_id = :idFilial)
-            ) AS "entradas",
-
-            (SELECT COALESCE(SUM(d.valor), 0)
-             FROM despesa d
-             WHERE d.data_despesa >= :inicio
-               AND d.data_despesa < :fim
-               AND (:idFilial IS NULL OR d.filial_id = :idFilial)
-            ) AS "saidas",
-
-            (
-                (SELECT COALESCE(SUM(r.valor), 0)
-                 FROM receita r
-                 JOIN contabancaria cb ON cb.id = r.conta_bancaria_id
-                 WHERE r.data_receita >= :inicio
-                   AND r.data_receita < :fim
-                   AND (:idFilial IS NULL OR cb.filial_id = :idFilial)
-                )
-                -
-                (SELECT COALESCE(SUM(d.valor), 0)
-                 FROM despesa d
-                 WHERE d.data_despesa >= :inicio
-                   AND d.data_despesa < :fim
-                   AND (:idFilial IS NULL OR d.filial_id = :idFilial)
-                )
-            ) AS "resultado"
-        """, nativeQuery = true)
-    DashboardKpiProjection buscarKpis(
-            @Param("inicio") LocalDate inicio,
-            @Param("fim") LocalDate fim,
+    @Query("""
+            SELECT COALESCE(SUM(o.valorOperacao), 0)
+            FROM Operacao o
+            WHERE o.dtHora >= :inicio
+              AND o.dtHora < :fim
+              AND o.tipoOperacao = :tipo
+              AND (:idFilial IS NULL OR o.contaBancaria.filial.idFilial = :idFilial)
+            """)
+    Double somaOperacoes(
+            @Param("inicio") LocalDateTime inicio,
+            @Param("fim") LocalDateTime fim,
+            @Param("tipo") TipoOperacao tipo,
             @Param("idFilial") Integer idFilial
     );
 }
-

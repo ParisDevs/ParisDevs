@@ -7,16 +7,19 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+@Schema(name = "UsuarioRequest", description = "Dados para criar ou atualizar um usuário")
 public class UsuarioRequestDto {
 
     @Schema(description = "Nome completo do usuário", example = "Bob Silva")
     @NotBlank(message = "O nome é obrigatório")
     private String nome;
 
-    @NotNull
+    @Schema(description = "Identificador da filial", example = "1")
+    @NotNull(message = "Informe a filial.")
     private Integer idFilial;
 
-    @NotBlank
+    @Schema(description = "Cargo do usuário", example = "FINANCEIRO")
+    @NotNull(message = "Informe o cargo.")
     private Cargo cargo;
 
     @Schema(description = "Endereço de e-mail eletrônico", example = "bob@email.com")
@@ -25,7 +28,7 @@ public class UsuarioRequestDto {
     private String email;
 
     @Schema(description = "Senha de acesso ao sistema (mínimo 8 caracteres)", example = "Senha@123")
-    @NotBlank(message = "A senha é obrigatória")
+    @NotBlank(message = "A senha é obrigatória", groups = UsuarioOnCreate.class)
     @Size(min = 8, max = 45, message = "A senha deve ter entre 8 e 45 caracteres")
     private String senha;
 

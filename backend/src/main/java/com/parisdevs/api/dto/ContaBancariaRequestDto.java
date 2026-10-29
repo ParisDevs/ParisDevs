@@ -1,8 +1,10 @@
 package com.parisdevs.api.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
+@Schema(name = "ContaBancariaRequest", description = "Dados para criar ou atualizar uma conta bancária")
 public class ContaBancariaRequestDto {
 
     @NotNull

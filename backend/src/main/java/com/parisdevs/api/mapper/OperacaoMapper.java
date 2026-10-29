@@ -2,6 +2,7 @@ package com.parisdevs.api.mapper;
 
 import com.parisdevs.api.dto.OperacaoRequestDto;
 import com.parisdevs.api.dto.OperacaoResponseDto;
+import com.parisdevs.api.entity.ContaBancaria;
 import com.parisdevs.api.entity.Operacao;
 
 import java.util.ArrayList;
@@ -26,7 +27,6 @@ public class OperacaoMapper {
         if (operacao == null) return null;
 
         OperacaoResponseDto operacaoResponseDto = new OperacaoResponseDto();
-
         operacaoResponseDto.setIdOperacao(operacao.getIdOperacao());
         operacaoResponseDto.setValorOperacao(operacao.getValorOperacao());
         operacaoResponseDto.setTipoOperacao(operacao.getTipoOperacao());
@@ -34,39 +34,27 @@ public class OperacaoMapper {
         operacaoResponseDto.setDtHora(operacao.getDtHora());
         operacaoResponseDto.setRazaoSocial(operacao.getRazaoSocial());
 
-        OperacaoResponseDto.ContaBancariaResponseSimplesDto contaBancariaResponse = new OperacaoResponseDto.ContaBancariaResponseSimplesDto();
-        contaBancariaResponse.setIdContaBancaria(operacao.getContaBancaria().getIdContaBancaria());
-        contaBancariaResponse.setNomeInstituicao(operacao.getContaBancaria().getNomeInstituicao());
-        contaBancariaResponse.setNomeTitular(operacao.getContaBancaria().getNomeTitular());
+        ContaBancaria conta = operacao.getContaBancaria();
+        if (conta != null) {
+            OperacaoResponseDto.ContaBancariaResponseSimplesDto contaBancariaResponse =
+                    new OperacaoResponseDto.ContaBancariaResponseSimplesDto();
+            contaBancariaResponse.setIdContaBancaria(conta.getIdContaBancaria());
+            contaBancariaResponse.setNomeInstituicao(conta.getNomeInstituicao());
+            contaBancariaResponse.setNomeTitular(conta.getNomeTitular());
+            contaBancariaResponse.setNumeroConta(conta.getNumeroConta());
+            operacaoResponseDto.setContaBancariaDto(contaBancariaResponse);
+        }
 
-        operacaoResponseDto.setContaBancariaDto(contaBancariaResponse);
-
-        return  operacaoResponseDto;
-
+        return operacaoResponseDto;
     }
 
     public static List<OperacaoResponseDto> toResponseDto(List<Operacao> operacoes) {
         if (operacoes == null) return null;
 
-        List<OperacaoResponseDto> operacoesResponseDto = new ArrayList<>();
+        List<OperacaoResponseDto> respostas = new ArrayList<>();
         for (Operacao operacao : operacoes) {
-            OperacaoResponseDto operacaoResponseDto = new OperacaoResponseDto();
-            operacaoResponseDto.setIdOperacao(operacao.getIdOperacao());
-            operacaoResponseDto.setValorOperacao(operacao.getValorOperacao());
-            operacaoResponseDto.setTipoOperacao(operacao.getTipoOperacao());
-            operacaoResponseDto.setCategoria(operacao.getCategoria());
-            operacaoResponseDto.setDtHora(operacao.getDtHora());
-            operacaoResponseDto.setRazaoSocial(operacao.getRazaoSocial());
-
-            OperacaoResponseDto.ContaBancariaResponseSimplesDto contaBancariaResponse = new OperacaoResponseDto.ContaBancariaResponseSimplesDto();
-            contaBancariaResponse.setIdContaBancaria(operacao.getContaBancaria().getIdContaBancaria());
-            contaBancariaResponse.setNomeInstituicao(operacao.getContaBancaria().getNomeInstituicao());
-            contaBancariaResponse.setNomeTitular(operacao.getContaBancaria().getNomeTitular());
-
-            operacaoResponseDto.setContaBancariaDto(contaBancariaResponse);
-            operacoesResponseDto.add(operacaoResponseDto);
+            respostas.add(toResponseDto(operacao));
         }
-
-        return  operacoesResponseDto;
+        return respostas;
     }
 }

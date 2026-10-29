@@ -4,15 +4,16 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+@Schema(name = "FilialRequest", description = "Dados para criar ou atualizar uma filial")
 public class FilialRequestDto {
 
     @Schema(description = "Razão Social da filial", example = "Paris 6 Jardins LTDA")
     @NotBlank(message = "A razão social é obrigatória")
     private String razaoSocial;
 
-    @Schema(description = "CNPJ da filial (apenas os 14 números)", example = "12345678000199")
+    @Schema(description = "CNPJ da filial (14 dígitos, com ou sem máscara)", example = "12345678000199")
     @NotBlank(message = "O CNPJ é obrigatório")
-    @Size(min = 14, max = 14, message = "O CNPJ deve ter exatamente 14 caracteres")
+    @Size(min = 14, max = 18, message = "Informe um CNPJ válido.")
     private String cnpj;
 
     @Schema(description = "Endereço físico completo da filial", example = "Alameda Lorena, 123 - São Paulo/SP")

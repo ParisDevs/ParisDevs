@@ -1,10 +1,9 @@
 package com.parisdevs.api.dto;
 
 import com.parisdevs.api.enums.Cargo;
-import com.parisdevs.api.entity.Filial;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
+import io.swagger.v3.oas.annotations.media.Schema;
 
+@Schema(name = "UsuarioResponse", description = "Usuário retornado pela API")
 public class UsuarioResponseDto {
 
     private Integer id;
@@ -12,18 +11,16 @@ public class UsuarioResponseDto {
     private String nome;
     private Cargo cargo;
     private String email;
-    private String senha;
 
     public UsuarioResponseDto() {
     }
 
-    public UsuarioResponseDto(Integer id, FilialResponseSimplesDto filial, String nome, Cargo cargo, String email, String senha) {
+    public UsuarioResponseDto(Integer id, FilialResponseSimplesDto filial, String nome, Cargo cargo, String email) {
         this.id = id;
         this.filial = filial;
         this.nome = nome;
         this.cargo = cargo;
         this.email = email;
-        this.senha = senha;
     }
 
     public Integer getId() {
@@ -64,13 +61,5 @@ public class UsuarioResponseDto {
 
     public void setEmail(String email) {
         this.email = email;
-    }
-
-    public String getSenha() {
-        return senha;
-    }
-
-    public void setSenha(String senha) {
-        this.senha = senha;
     }
 }

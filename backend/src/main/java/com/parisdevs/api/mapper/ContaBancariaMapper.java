@@ -44,12 +44,14 @@ public class ContaBancariaMapper {
         dto.setCpfCnpjTitular(conta.getCpfCnpjTitular());
         dto.setNomeTitular(conta.getNomeTitular());
         dto.setAtivo(conta.getAtivo());
+        dto.setSaldo(conta.getSaldo());
 
-        FilialResponseSimplesDto filialDto = new FilialResponseSimplesDto();
-        filialDto.setIdFilial(conta.getFilial().getIdFilial());
-        filialDto.setRazaoSocial(conta.getFilial().getRazaoSocial());
-
-        dto.setFilial(filialDto);
+        if (conta.getFilial() != null) {
+            FilialResponseSimplesDto filialDto = new FilialResponseSimplesDto();
+            filialDto.setIdFilial(conta.getFilial().getIdFilial());
+            filialDto.setRazaoSocial(conta.getFilial().getRazaoSocial());
+            dto.setFilial(filialDto);
+        }
 
         return dto;
     }

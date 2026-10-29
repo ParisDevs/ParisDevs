@@ -1,10 +1,11 @@
 package com.parisdevs.api.dto;
 
-import com.parisdevs.api.entity.ContaBancaria;
 import com.parisdevs.api.enums.TipoOperacao;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
 
+@Schema(name = "OperacaoResponse", description = "Operação retornada pela API")
 public class OperacaoResponseDto {
 
     private Long idOperacao;
@@ -19,14 +20,16 @@ public class OperacaoResponseDto {
         private Long idContaBancaria;
         private String nomeInstituicao;
         private String nomeTitular;
+        private String numeroConta;
 
         public ContaBancariaResponseSimplesDto() {
         }
 
-        public ContaBancariaResponseSimplesDto(Long idContaBancaria, String nomeInstituicao, String nomeTitular) {
+        public ContaBancariaResponseSimplesDto(Long idContaBancaria, String nomeInstituicao, String nomeTitular, String numeroConta) {
             this.idContaBancaria = idContaBancaria;
             this.nomeInstituicao = nomeInstituicao;
             this.nomeTitular = nomeTitular;
+            this.numeroConta = numeroConta;
         }
 
         public Long getIdContaBancaria() {
@@ -51,6 +54,14 @@ public class OperacaoResponseDto {
 
         public void setNomeTitular(String nomeTitular) {
             this.nomeTitular = nomeTitular;
+        }
+
+        public String getNumeroConta() {
+            return numeroConta;
+        }
+
+        public void setNumeroConta(String numeroConta) {
+            this.numeroConta = numeroConta;
         }
     }
 

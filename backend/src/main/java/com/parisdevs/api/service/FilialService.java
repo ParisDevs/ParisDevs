@@ -1,6 +1,7 @@
 package com.parisdevs.api.service;
 
 import com.parisdevs.api.entity.Filial;
+import com.parisdevs.api.exception.CnpjInvalidoException;
 import com.parisdevs.api.exception.CnpjJaCadastradoException;
 import com.parisdevs.api.exception.FilialNaoEncontradaException;
 import com.parisdevs.api.exception.TokenJaCadastradoException;
@@ -33,32 +34,25 @@ public class FilialService {
     }
 
     public Filial cadastrar(Filial novaFilial) {
-        boolean existeCnpj = filialRepository.existsByCnpj(novaFilial.getCnpj());
-        if (existeCnpj) {
+        normalizar(novaFilial);
+        if (cnpjEmUso(novaFilial.getCnpj(), null)) {
             throw new CnpjJaCadastradoException();
         }
-
-        boolean existeToken = filialRepository.existsByToken(novaFilial.getToken());
-        if (existeToken) {
+        if (tokenEmUso(novaFilial.getToken(), null)) {
             throw new TokenJaCadastradoException();
         }
-
         return filialRepository.save(novaFilial);
     }
 
     public Filial atualizar(Integer id, Filial filial) {
         filialExiste(id);
-
-        boolean existeCnpj = filialRepository.existsByCnpjAndIdFilialNot(filial.getCnpj(), id);
-        if (existeCnpj) {
+        normalizar(filial);
+        if (cnpjEmUso(filial.getCnpj(), id)) {
             throw new CnpjJaCadastradoException();
         }
-
-        boolean existeToken = filialRepository.existsByTokenAndIdFilialNot(filial.getToken(), id);
-        if (existeToken) {
+        if (tokenEmUso(filial.getToken(), id)) {
             throw new TokenJaCadastradoException();
         }
-
         filial.setIdFilial(id);
         return filialRepository.save(filial);
     }
@@ -72,5 +66,47 @@ public class FilialService {
         if (!filialRepository.existsById(id)) {
             throw new FilialNaoEncontradaException();
         }
+    }
+
+    private void normalizar(Filial filial) {
+        filial.setRazaoSocial(trimToNull(filial.getRazaoSocial()));
+        filial.setEndereco(trimToNull(filial.getEndereco()));
+        filial.setToken(trimToNull(filial.getToken()));
+        filial.setCnpj(somenteDigitosCnpj(filial.getCnpj()));
+    }
+
+    private String somenteDigitosCnpj(String cnpj) {
+        String digits = cnpj == null ? "" : cnpj.replaceAll("\\D", "");
+        if (digits.length() != 14) {
+            throw new CnpjInvalidoException();
+        }
+        return digits;
+    }
+
+    private boolean cnpjEmUso(String cnpj, Integer exceptId) {
+        return filialRepository.findAll().stream()
+                .filter((filial) -> exceptId == null || !exceptId.equals(filial.getIdFilial()))
+                .anyMatch((filial) -> somenteDigitos(filial.getCnpj()).equals(cnpj));
+    }
+
+    private boolean tokenEmUso(String token, Integer exceptId) {
+        if (token == null || token.isBlank()) {
+            return false;
+        }
+        return filialRepository.findAll().stream()
+                .filter((filial) -> exceptId == null || !exceptId.equals(filial.getIdFilial()))
+                .anyMatch((filial) -> token.equals(trimToNull(filial.getToken())));
+    }
+
+    private static String somenteDigitos(String value) {
+        return value == null ? "" : value.replaceAll("\\D", "");
+    }
+
+    private static String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

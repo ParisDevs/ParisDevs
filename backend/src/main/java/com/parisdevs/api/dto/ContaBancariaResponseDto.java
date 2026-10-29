@@ -1,13 +1,10 @@
 package com.parisdevs.api.dto;
 
-import com.parisdevs.api.entity.Filial;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.math.BigDecimal;
+
+@Schema(name = "ContaBancariaResponse", description = "Conta bancária retornada pela API")
 public class ContaBancariaResponseDto {
 
 
@@ -22,12 +19,13 @@ public class ContaBancariaResponseDto {
     private String cpfCnpjTitular;
     private String nomeTitular;
     private Boolean ativo;
+    private BigDecimal saldo;
 
 
     public ContaBancariaResponseDto() {
     }
 
-    public ContaBancariaResponseDto(Long idContaBancaria, FilialResponseSimplesDto filial, String codigoBanco, String nomeInstituicao, String agencia, String agenciaDigito, String numeroConta, String tipoConta, String cpfCnpjTitular, String nomeTitular, Boolean ativo) {
+    public ContaBancariaResponseDto(Long idContaBancaria, FilialResponseSimplesDto filial, String codigoBanco, String nomeInstituicao, String agencia, String agenciaDigito, String numeroConta, String tipoConta, String cpfCnpjTitular, String nomeTitular, Boolean ativo, BigDecimal saldo) {
         this.idContaBancaria = idContaBancaria;
         this.filial = filial;
         this.codigoBanco = codigoBanco;
@@ -39,6 +37,7 @@ public class ContaBancariaResponseDto {
         this.cpfCnpjTitular = cpfCnpjTitular;
         this.nomeTitular = nomeTitular;
         this.ativo = ativo;
+        this.saldo = saldo;
     }
 
     public Long getIdContaBancaria() {
@@ -127,5 +126,13 @@ public class ContaBancariaResponseDto {
 
     public void setAtivo(Boolean ativo) {
         this.ativo = ativo;
+    }
+
+    public BigDecimal getSaldo() {
+        return saldo;
+    }
+
+    public void setSaldo(BigDecimal saldo) {
+        this.saldo = saldo;
     }
 }

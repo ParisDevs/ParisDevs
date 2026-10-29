@@ -1,5 +1,8 @@
 package com.parisdevs.api.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(name = "FilialResponse", description = "Filial retornada pela API")
 public class FilialResponseDto {
 
     private Integer idFilial;

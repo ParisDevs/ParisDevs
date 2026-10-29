@@ -3,7 +3,9 @@ package com.parisdevs.api.service;
 import com.parisdevs.api.dto.UsuarioLoginDto;
 import com.parisdevs.api.dto.UsuarioRequestDto;
 import com.parisdevs.api.dto.UsuarioResponseDto;
+import com.parisdevs.api.entity.Filial;
 import com.parisdevs.api.entity.Usuario;
+import com.parisdevs.api.exception.CredenciaisInvalidasException;
 import com.parisdevs.api.exception.EmailJaCadastradoException;
 import com.parisdevs.api.exception.FilialNaoEncontradaException;
 import com.parisdevs.api.exception.FilialObrigatoriaException;
@@ -14,7 +16,6 @@ import com.parisdevs.api.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class UsuarioService {
@@ -28,76 +29,66 @@ public class UsuarioService {
     }
 
     public List<Usuario> listarUsuarios() {
-        return usuarioRepository.findAll();
+        return usuarioRepository.findAllWithFilial();
     }
 
     public Usuario buscarPorId(Integer id) {
-        Optional<Usuario> usuarioOptional = usuarioRepository.findById(id);
-
-        if (usuarioOptional.isEmpty()) {
-            throw new UsuarioNaoEncontradoException();
-        }
-        return usuarioOptional.get();
+        return usuarioRepository.findById(id).orElseThrow(UsuarioNaoEncontradoException::new);
     }
 
-    public Usuario cadastrar(Usuario usuario) {
-        Boolean existeMesmoEmail = usuarioRepository.existsByEmail(usuario.getEmail());
-        if (existeMesmoEmail) {
+    public Usuario cadastrar(UsuarioRequestDto dto) {
+        if (usuarioRepository.existsByEmail(dto.getEmail())) {
             throw new EmailJaCadastradoException();
         }
-
-        if (usuario.getFilial() == null || usuario.getFilial().getIdFilial() == null) {
-            throw new FilialObrigatoriaException();
-        }
-
-        boolean filialExiste = filialRepository.existsById(usuario.getFilial().getIdFilial());
-        if (!filialExiste) {
-            throw new FilialNaoEncontradaException();
-        }
-
+        Usuario usuario = UsuarioMapper.toEntity(dto);
+        usuario.setFilial(buscarFilial(dto.getIdFilial()));
         return usuarioRepository.save(usuario);
     }
 
     public UsuarioResponseDto login(UsuarioLoginDto request) {
-        System.out.println("E-mail recebido: [" + request.getEmail() + "]");
+        if (request == null
+                || request.getEmail() == null
+                || request.getEmail().isBlank()
+                || request.getSenha() == null
+                || request.getSenha().isEmpty()) {
+            throw new CredenciaisInvalidasException();
+        }
 
-        Usuario usuario = usuarioRepository.findByEmail(request.getEmail());
-
-        System.out.println("Usuário encontrado: " + (usuario != null));
+        Usuario usuario = usuarioRepository.findByEmail(request.getEmail().trim());
+        if (usuario == null
+                || usuario.getSenha() == null
+                || !usuario.getSenha().equals(request.getSenha())) {
+            throw new CredenciaisInvalidasException();
+        }
 
         return UsuarioMapper.toResponseDto(usuario);
     }
 
-    public Usuario atualizar(Integer id, Usuario usuario) {
-        usuarioExiste(id);
-
-        Boolean existeUsuarioMesmoEmail = usuarioRepository.existsByEmailAndIdNot(usuario.getEmail(), id);
-        if (existeUsuarioMesmoEmail) {
+    public Usuario atualizar(Integer id, UsuarioRequestDto dto) {
+        Usuario persistido = buscarPorId(id);
+        if (usuarioRepository.existsByEmailAndIdNot(dto.getEmail(), id)) {
             throw new EmailJaCadastradoException();
         }
-
-        if (usuario.getFilial() == null || usuario.getFilial().getIdFilial() == null) {
-            throw new FilialObrigatoriaException();
-        }
-
-        boolean filialExiste = filialRepository.existsById(usuario.getFilial().getIdFilial());
-        if (!filialExiste) {
-            throw new FilialNaoEncontradaException();
-        }
-
+        Usuario usuario = UsuarioMapper.toEntity(dto);
         usuario.setId(id);
+        usuario.setFilial(buscarFilial(dto.getIdFilial()));
+        if (dto.getSenha() == null || dto.getSenha().isBlank()) {
+            usuario.setSenha(persistido.getSenha());
+        }
         return usuarioRepository.save(usuario);
     }
 
-
     public void deletarPorid(Integer id) {
-        usuarioExiste(id);
-        usuarioRepository.deleteById(id);
-    }
-
-    private void usuarioExiste(Integer id) {
         if (!usuarioRepository.existsById(id)) {
             throw new UsuarioNaoEncontradoException();
         }
+        usuarioRepository.deleteById(id);
+    }
+
+    private Filial buscarFilial(Integer idFilial) {
+        if (idFilial == null) {
+            throw new FilialObrigatoriaException();
+        }
+        return filialRepository.findById(idFilial).orElseThrow(FilialNaoEncontradaException::new);
     }
 }
