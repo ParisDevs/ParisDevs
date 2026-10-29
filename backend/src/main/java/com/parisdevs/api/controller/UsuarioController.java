@@ -1,5 +1,6 @@
 package com.parisdevs.api.controller;
 
+import com.parisdevs.api.dto.LoginResponseDto;
 import com.parisdevs.api.dto.UsuarioLoginDto;
 import com.parisdevs.api.dto.UsuarioOnCreate;
 import com.parisdevs.api.dto.UsuarioRequestDto;
@@ -56,7 +57,7 @@ public class UsuarioController {
 
     @Operation(summary = "Autenticar usuário")
     @PostMapping("/login")
-    public ResponseEntity<UsuarioResponseDto> login(@RequestBody UsuarioLoginDto request){
+    public ResponseEntity<LoginResponseDto> login(@RequestBody UsuarioLoginDto request) {
         return ResponseEntity.status(200).body(usuarioService.login(request));
     }
 

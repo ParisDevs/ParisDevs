@@ -10,6 +10,8 @@ import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.tags.Tag;
 import org.springdoc.core.customizers.OperationCustomizer;
 import org.springframework.context.annotation.Bean;
@@ -29,6 +31,7 @@ public class OpenApiConfig {
 
     private static final String ERRO = "ErroResposta";
     private static final String JSON = "application/json";
+    private static final String BEARER_JWT = "bearer-jwt";
 
     @Bean
     public OpenAPI parisDevsOpenAPI() {
@@ -37,12 +40,20 @@ public class OpenApiConfig {
                         .description("Mensagem de erro")
                         .example("A operação informada não foi encontrada."));
 
+        SecurityScheme bearer = new SecurityScheme()
+                .type(SecurityScheme.Type.HTTP)
+                .scheme("bearer")
+                .bearerFormat("JWT")
+                .description("JWT emitido em POST /usuarios/login");
+
         return new OpenAPI()
                 .info(new Info()
                         .title("Paris Devs API")
-                        .description("Documentação OpenAPI gerada a partir dos controllers. Sem JWT neste slice.")
+                        .description("Documentação OpenAPI gerada a partir dos controllers. Autenticação JWT Bearer nas rotas protegidas.")
                         .version("0.0.1-SNAPSHOT"))
-                .components(new Components().addSchemas(ERRO, erroSchema))
+                .components(new Components()
+                        .addSchemas(ERRO, erroSchema)
+                        .addSecuritySchemes(BEARER_JWT, bearer))
                 .addTagsItem(new Tag().name("Usuarios").description("Cadastro, consulta e login de usuários"))
                 .addTagsItem(new Tag().name("Filiais").description("Cadastro e consulta de filiais"))
                 .addTagsItem(new Tag().name("Conta Bancaria").description("Contas bancárias vinculadas à filial"))
@@ -63,13 +74,19 @@ public class OpenApiConfig {
                     || handlerMethod.getBeanType().getSimpleName().contains("Filial");
             boolean recursoUnico = pathVar && (name.startsWith("buscar") || name.startsWith("atualizar") || name.startsWith("deletar"));
 
+            boolean login = "login".equals(name) && http == RequestMethod.POST;
+            if (!login) {
+                operation.addSecurityItem(new SecurityRequirement().addList(BEARER_JWT));
+                putIfAbsent(responses, "401", "Token ausente, inválido ou expirado", erroJson);
+            }
+
             if (http == RequestMethod.GET) {
                 putIfAbsent(responses, "200", "Consulta realizada");
                 if (recursoUnico) {
                     putIfAbsent(responses, "404", "Recurso não encontrado", erroJson);
                 }
             } else if (http == RequestMethod.POST) {
-                if ("login".equals(name)) {
+                if (login) {
                     putIfAbsent(responses, "200", "Login realizado");
                     putIfAbsent(responses, "401", "Credenciais inválidas", erroJson);
                 } else {

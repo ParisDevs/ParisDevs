@@ -39,6 +39,16 @@ public class ApiExceptionHandler {
                 .body(Map.of("message", "Não é possível excluir: há cadastros vinculados."));
     }
 
+    @ExceptionHandler({
+            CredenciaisInvalidasException.class,
+            TokenAusenteException.class,
+            TokenInvalidoException.class,
+            TokenExpiradoException.class
+    })
+    public ResponseEntity<Map<String, String>> unauthorized(RuntimeException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", ex.getMessage()));
+    }
+
     @ExceptionHandler({ FilialObrigatoriaException.class, CnpjInvalidoException.class })
     public ResponseEntity<Map<String, String>> badRequest(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", ex.getMessage()));

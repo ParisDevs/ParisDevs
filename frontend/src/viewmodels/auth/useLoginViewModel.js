@@ -44,11 +44,13 @@ export function useLoginViewModel() {
     api
       .post('/usuarios/login', { email: email.trim(), senha: password })
       .then((resposta) => {
-        if (!resposta.data?.id || !resposta.data.email) {
+        const token = resposta.data?.token
+        const usuario = resposta.data?.usuario
+        if (!token || !usuario?.id || !usuario.email) {
           setError(t.loginUnavailable)
           return
         }
-        login(resposta.data, stay)
+        login({ usuario, token }, stay)
         navigate('/dashboard')
       })
       .catch((erro) => {

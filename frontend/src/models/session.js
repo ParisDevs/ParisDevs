@@ -73,9 +73,11 @@ export function saveSession(session, remember = true) {
 export function clearSession() {
   remove('session')
   remove('usuario')
+  remove('token')
   try {
     sessionStorage.removeItem(PREFIX + 'session')
     sessionStorage.removeItem(PREFIX + 'usuario')
+    sessionStorage.removeItem(PREFIX + 'token')
   } catch {
     /* noop */
   }
@@ -95,6 +97,40 @@ export function loadUsuario() {
   if (persistent) return persistent
   if (typeof sessionStorage === 'undefined') return null
   return readUsuarioStore(sessionStorage)
+}
+
+function readTokenStore(storage) {
+  try {
+    return storage.getItem(PREFIX + 'token')
+  } catch {
+    return null
+  }
+}
+
+export function loadToken() {
+  const persistent = read('token', null)
+  if (typeof persistent === 'string' && persistent) return persistent
+  if (typeof sessionStorage === 'undefined') return null
+  const sessionToken = readTokenStore(sessionStorage)
+  return sessionToken || null
+}
+
+export function saveToken(token, remember = true) {
+  if (remember) {
+    write('token', token)
+    try {
+      sessionStorage.removeItem(PREFIX + 'token')
+    } catch {
+      /* noop */
+    }
+  } else {
+    remove('token')
+    try {
+      sessionStorage.setItem(PREFIX + 'token', token)
+    } catch {
+      /* noop */
+    }
+  }
 }
 
 export function saveUsuario(usuario, remember = true) {
@@ -189,9 +225,16 @@ export function applyTheme(theme) {
 
 
 export function loadSnapshot() {
-  const usuario = loadUsuario()
+  let usuario = loadUsuario()
+  let token = loadToken()
+  if (!usuario || !token) {
+    if (usuario || token) clearSession()
+    usuario = null
+    token = null
+  }
   return {
     usuario,
+    token,
     session: usuario ? sessionFromUsuario(usuario) : null,
     scope: read('scope', 'grupo'),
     period: read('period', null),

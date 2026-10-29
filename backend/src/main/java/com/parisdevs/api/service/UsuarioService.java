@@ -1,8 +1,8 @@
 package com.parisdevs.api.service;
 
+import com.parisdevs.api.dto.LoginResponseDto;
 import com.parisdevs.api.dto.UsuarioLoginDto;
 import com.parisdevs.api.dto.UsuarioRequestDto;
-import com.parisdevs.api.dto.UsuarioResponseDto;
 import com.parisdevs.api.entity.Filial;
 import com.parisdevs.api.entity.Usuario;
 import com.parisdevs.api.exception.CredenciaisInvalidasException;
@@ -22,10 +22,15 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final FilialRepository filialRepository;
+    private final JwtService jwtService;
 
-    public UsuarioService(UsuarioRepository usuarioRepository, FilialRepository filialRepository) {
+    public UsuarioService(
+            UsuarioRepository usuarioRepository,
+            FilialRepository filialRepository,
+            JwtService jwtService) {
         this.usuarioRepository = usuarioRepository;
         this.filialRepository = filialRepository;
+        this.jwtService = jwtService;
     }
 
     public List<Usuario> listarUsuarios() {
@@ -45,7 +50,7 @@ public class UsuarioService {
         return usuarioRepository.save(usuario);
     }
 
-    public UsuarioResponseDto login(UsuarioLoginDto request) {
+    public LoginResponseDto login(UsuarioLoginDto request) {
         if (request == null
                 || request.getEmail() == null
                 || request.getEmail().isBlank()
@@ -61,7 +66,7 @@ public class UsuarioService {
             throw new CredenciaisInvalidasException();
         }
 
-        return UsuarioMapper.toResponseDto(usuario);
+        return new LoginResponseDto(jwtService.gerar(usuario), UsuarioMapper.toResponseDto(usuario));
     }
 
     public Usuario atualizar(Integer id, UsuarioRequestDto dto) {

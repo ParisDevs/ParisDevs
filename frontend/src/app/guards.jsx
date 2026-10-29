@@ -4,8 +4,8 @@ import { useAppViewModel } from '@/viewmodels/AppViewModel'
 import { RouteErrorBoundary } from './RouteErrorBoundary'
 
 export function ProtectedRoute() {
-  const { usuario } = useAppViewModel()
-  if (!usuario) return <Navigate to="/login" replace />
+  const { usuario, token } = useAppViewModel()
+  if (!usuario || !token) return <Navigate to="/login" replace />
   return <AppShell />
 }
 
