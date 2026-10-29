@@ -17,9 +17,9 @@ export const MONTHS = ['2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2
 export const GROUP_NAME = 'Grupo Paris 6'
 
 export const companies = [
-  { id: 'c1', code: 'CNPJ 01', name: 'Paris Restaurantes Ltda', fantasy: 'Paris Centro', cnpj: '12.345.678/0001-90', segment: 'restaurante', segmentLabel: 'Restaurante', city: 'São Paulo/SP', unit: 'Loja Centro', status: 'ativo' },
-  { id: 'c2', code: 'CNPJ 02', name: 'Paris Bistrô Ltda', fantasy: 'Paris Bistrô', cnpj: '12.345.678/0002-71', segment: 'restaurante', segmentLabel: 'Restaurante', city: 'São Paulo/SP', unit: 'Loja Bistrô', status: 'ativo' },
-  { id: 'c3', code: 'CNPJ 03', name: 'Paris Distribuição Ltda', fantasy: 'Paris Distribuição', cnpj: '23.456.789/0001-12', segment: 'distribuicao', segmentLabel: 'Distribuição de alimentos', city: 'Guarulhos/SP', unit: 'Centro de Distribuição', status: 'ativo' },
+  { id: 'c1', code: 'CNPJ 01', name: 'Paris 6 Classique (Matriz 24h)', fantasy: 'Paris 6 Classique', cnpj: '12.345.678/0001-90', segment: 'restaurante', segmentLabel: 'Restaurante', city: 'São Paulo/SP', unit: 'Haddock Lobo, 1240', status: 'ativo' },
+  { id: 'c2', code: 'CNPJ 02', name: 'Paris 6 Vaudeville', fantasy: 'Paris 6 Vaudeville', cnpj: '98.765.432/0001-10', segment: 'restaurante', segmentLabel: 'Restaurante', city: 'São Paulo/SP', unit: 'Haddock Lobo, 1159', status: 'ativo' },
+  { id: 'c3', code: 'CNPJ 03', name: 'Paris 6 (Aeroporto de Guarulhos)', fantasy: 'Paris 6 Guarulhos', cnpj: '11.222.333/0001-81', segment: 'restaurante', segmentLabel: 'Restaurante', city: 'Guarulhos/SP', unit: 'Terminal 3', status: 'ativo' },
 ]
 
 export const banks = {
@@ -41,9 +41,9 @@ export const accounts = [
 ]
 
 export const costCenters = [
-  { id: 'CC01', name: 'Loja Centro', companyId: 'c1', type: 'Loja' },
-  { id: 'CC02', name: 'Loja Bistrô', companyId: 'c2', type: 'Loja' },
-  { id: 'CC03', name: 'Centro de Distribuição', companyId: 'c3', type: 'Operação' },
+  { id: 'CC01', name: 'Paris 6 Classique', companyId: 'c1', type: 'Loja' },
+  { id: 'CC02', name: 'Paris 6 Vaudeville', companyId: 'c2', type: 'Loja' },
+  { id: 'CC03', name: 'Paris 6 Guarulhos', companyId: 'c3', type: 'Loja' },
   { id: 'CC04', name: 'Administrativo do grupo', companyId: null, type: 'Departamento' },
 ]
 
@@ -155,7 +155,7 @@ export const transactions = [
   tx('t12', 'a1', '2026-09-22', '2026-09', 'PAGTO FORNECEDOR AMBEV SA', 'AMBEV S.A.', 'NF 55231', -4800, 'C.1.2.1', 'CC01', 97, 'historico', 'duplicidade', { duplicateOf: 't02' }),
   tx('t13', 'a1', '2026-09-29', '2026-09', 'ESTORNO VENDA CARTAO', 'Rede', 'Lote 0927', -640, 'D.2', 'CC01', 82, 'ml', 'conciliado'),
   tx('t14', 'a1', '2026-10-01', '2026-09', 'REDE CARTOES CRED LOTE 1001', 'Rede', 'Lote 1001', 29870.4, 'R.1.1', 'CC01', 98, 'regra', 'conciliado'),
-  tx('t15', 'a3', '2026-09-01', '2026-09', 'PAGTO PARIS DISTRIBUICAO', 'Paris Distribuição Ltda', 'NF 3310', -15200, 'C.1.1', 'CC02', 96, 'historico', 'conciliado', { intercompany: true }),
+  tx('t15', 'a3', '2026-09-01', '2026-09', 'PAGTO PARIS 6 GUARULHOS', 'Paris 6 (Aeroporto de Guarulhos)', 'NF 3310', -15200, 'C.1.1', 'CC02', 96, 'historico', 'conciliado', { intercompany: true }),
   tx('t16', 'a3', '2026-09-02', '2026-09', 'ALUGUEL BISTRO SET', 'Condomínio Jardins', 'Boleto 1209', -12500, 'O.1', 'CC02', 99, 'regra', 'conciliado'),
   tx('t17', 'a4', '2026-09-04', '2026-09', 'FOLHA PAGTO SET', 'Folha de pagamento', 'Folha 09/26', -22800, 'C.2', 'CC02', 99, 'regra', 'conciliado'),
   tx('t18', 'a3', '2026-09-06', '2026-08', 'CIELO VENDAS CREDITO', 'Cielo', 'Lote 0906', 21340, 'R.1.1', 'CC02', 98, 'regra', 'conciliado'),
@@ -166,15 +166,15 @@ export const transactions = [
   tx('t23', 'a3', '2026-09-25', '2026-09', 'SABESP', 'Sabesp', 'Fatura 09/26', -1287.6, 'O.3.2', 'CC02', 99, 'regra', 'conciliado'),
   tx('t24', 'a4', '2026-09-30', '2026-09', 'DEPOSITO NAO IDENTIFICADO', '', '', 3150, null, null, 35, 'llm', 'divergencia'),
   tx('t25', 'a3', '2026-10-02', '2026-10', 'PIX ENVIADO JOAO PEREIRA', 'João Pereira', '', -1200, null, null, 41, 'llm', 'pendente'),
-  tx('t26', 'a5', '2026-09-01', '2026-09', 'BOLETO RECEBIDO PARIS BISTRO', 'Paris Bistrô Ltda', 'NF 3310', 15200, 'R.1.3', 'CC03', 96, 'historico', 'conciliado', { intercompany: true }),
+  tx('t26', 'a5', '2026-09-01', '2026-09', 'BOLETO RECEBIDO PARIS 6 VAUDEVILLE', 'Paris 6 Vaudeville', 'NF 3310', 15200, 'R.1.3', 'CC03', 96, 'historico', 'conciliado', { intercompany: true }),
   tx('t27', 'a5', '2026-09-04', '2026-09', 'FOLHA PAGTO SET', 'Folha de pagamento', 'Folha 09/26', -31500, 'C.2', 'CC03', 99, 'regra', 'conciliado'),
   tx('t28', 'a5', '2026-09-04', '2026-09', 'VENDA ATACADO MERCADO BOM PRECO', 'Mercado Bom Preço Ltda', 'NF 3302', 48600, 'R.1.3', 'CC03', 96, 'historico', 'conciliado'),
   tx('t29', 'a5', '2026-09-11', '2026-09', 'FRIGORIFICO BOI NOBRE', 'Frigorífico Boi Nobre S.A.', 'NF 88412', -26400, 'C.1.1.2', 'CC03', 98, 'historico', 'conciliado'),
   tx('t30', 'a6', '2026-09-18', '2026-09', 'COMBUSTIVEL FROTA', 'Auto Posto Rota 10', '', -3760.2, 'O.5', 'CC03', 78, 'ml', 'pendente'),
   tx('t31', 'a5', '2026-09-24', '2026-08', 'DARF IMPOSTOS SOBRE VENDA', 'Receita Federal', 'DARF 08/26', -9850, 'D.1', null, 99, 'regra', 'conciliado'),
   tx('t32', 'a6', '2026-09-26', '2026-09', 'META ADS CAMPANHA', 'Meta Platforms', 'Fatura 4471', -2400, 'O.4', 'CC04', 93, 'historico', 'sugestao'),
-  tx('t33', 'a5', '2026-10-01', '2026-10', 'TRANSF ENTRE CONTAS SANTANDER', 'Paris Distribuição Ltda', '', -20000, 'X.1', null, 99, 'regra', 'interna', { pairId: 't34' }),
-  tx('t34', 'a6', '2026-10-01', '2026-10', 'TED RECEBIDA ITAU', 'Paris Distribuição Ltda', '', 20000, 'X.1', null, 99, 'regra', 'interna', { pairId: 't33' }),
+  tx('t33', 'a5', '2026-10-01', '2026-10', 'TRANSF ENTRE CONTAS SANTANDER', 'Paris 6 (Aeroporto de Guarulhos)', '', -20000, 'X.1', null, 99, 'regra', 'interna', { pairId: 't34' }),
+  tx('t34', 'a6', '2026-10-01', '2026-10', 'TED RECEBIDA ITAU', 'Paris 6 (Aeroporto de Guarulhos)', '', 20000, 'X.1', null, 99, 'regra', 'interna', { pairId: 't33' }),
 ]
 
 export const expectedEntries = [
@@ -199,8 +199,8 @@ export const schedule = [
   { id: 's11', companyId: 'c3', date: '2026-10-10', competence: '2026-10', kind: 'receber', description: 'Venda atacado — NF 3341', counterparty: 'Mercado Bom Preço Ltda', amount: 49800, category: 'R.1.3', status: 'aberto' },
   { id: 's12', companyId: 'c1', date: '2026-10-14', competence: '2026-10', kind: 'pagar', description: 'Bebidas — NF 56102', counterparty: 'AMBEV S.A.', amount: -5100, category: 'C.1.2.1', status: 'aberto' },
   { id: 's13', companyId: 'c2', date: '2026-10-14', competence: '2026-10', kind: 'pagar', description: 'Vinhos — NF 1288', counterparty: 'Vinícola Serra Gaúcha Ltda', amount: -7600, category: 'C.1.2.2', status: 'aberto' },
-  { id: 's14', companyId: 'c3', date: '2026-10-15', competence: '2026-10', kind: 'receber', description: 'Venda para Paris Bistrô — NF 3355', counterparty: 'Paris Bistrô Ltda', amount: 15200, category: 'R.1.3', status: 'aberto', intercompany: true },
-  { id: 's15', companyId: 'c2', date: '2026-10-15', competence: '2026-10', kind: 'pagar', description: 'Compra de Paris Distribuição — NF 3355', counterparty: 'Paris Distribuição Ltda', amount: -15200, category: 'C.1.1', status: 'aberto', intercompany: true },
+  { id: 's14', companyId: 'c3', date: '2026-10-15', competence: '2026-10', kind: 'receber', description: 'Venda para Paris 6 Vaudeville — NF 3355', counterparty: 'Paris 6 Vaudeville', amount: 15200, category: 'R.1.3', status: 'aberto', intercompany: true },
+  { id: 's15', companyId: 'c2', date: '2026-10-15', competence: '2026-10', kind: 'pagar', description: 'Compra de Paris 6 Guarulhos — NF 3355', counterparty: 'Paris 6 (Aeroporto de Guarulhos)', amount: -15200, category: 'C.1.1', status: 'aberto', intercompany: true },
   { id: 's16', companyId: 'c1', date: '2026-10-17', competence: '2026-10', kind: 'receber', description: 'Repasse de cartões — Rede', counterparty: 'Rede', amount: 30500, category: 'R.1.1', status: 'aberto' },
   { id: 's17', companyId: 'c3', date: '2026-10-20', competence: '2026-09', kind: 'pagar', description: 'DARF impostos sobre venda set/26', counterparty: 'Receita Federal', amount: -10100, category: 'D.1', status: 'aberto' },
   { id: 's18', companyId: 'c2', date: '2026-10-22', competence: '2026-10', kind: 'receber', description: 'Vendas em cartão — Cielo', counterparty: 'Cielo', amount: 22400, category: 'R.1.1', status: 'aberto' },

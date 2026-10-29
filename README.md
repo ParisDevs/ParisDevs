@@ -9,10 +9,10 @@ A meta é reduzir o fechamento de cerca de **45 dias em planilha** para uma **vi
 | | |
 |---|---|
 | Cliente | Grupo Paris 6 · Cultura & Gastronomia |
-| Tipo | Website interno (convite do administrador; sem cadastro público) |
+| Tipo | Website interno (sem cadastro público) |
 | Turma | ADS A · 3º semestre · Grupo 9 |
-| Demo | Frontend com fixtures + `localStorage` |
-| API | Spring Boot em construção; ainda não alimenta as telas |
+| Frontend | React 19 (JSX, MVVM) + Vite 8 |
+| API | Spring Boot 4.1.1 · Java 21 · PostgreSQL · JWT |
 
 Documentação complementar: [wiki](wiki/Home.md) · [especificação](docs/especificacao-plataforma-conciliacao-financeira.md) · [design brief](docs/design-brief-paris-devs.md)
 
@@ -60,23 +60,26 @@ plano de contas → consolidação por CNPJ ou grupo → caixa e DRE → alertas
 | Administrador | Convite, permissão, CNPJ, banco, Open Finance e auditoria |
 | Auditor | Lê a trilha e os recortes; não altera classificação |
 
+Cargos no banco: `ADMINISTRADOR`, `CONTADOR`, `FINANCEIRO`, `GERENTE`.
+
 ### O que o sistema não faz
 
 - Não substitui a DRE **contábil/fiscal**. A visão é gerencial.
 - Não trata **transferência interna** como receita ou despesa.
-- Neste ambiente, Open Finance, SSO e MFA são **simulados**.
+- Open Finance, SSO e MFA são **simulados**. Não há Spring Security nem BCrypt.
 
-### Empresas de demonstração
+### Empresas de demonstração (seed)
 
-| Código | Fantasia | Segmento |
+| Unidade | Endereço | CNPJ |
 |---|---|---|
-| CNPJ 01 | Paris Centro | Restaurante |
-| CNPJ 02 | Paris Bistrô | Restaurante |
-| CNPJ 03 | Paris Distribuição | Distribuição de alimentos |
+| Paris 6 Classique (Matriz 24h) | Rua Haddock Lobo, 1240 – Jardins, São Paulo – SP | `12345678000190` |
+| Paris 6 Vaudeville | Rua Haddock Lobo, 1159 – Cerqueira César, São Paulo – SP | `98765432000110` |
+| Paris 6 (Aeroporto de Guarulhos) | Terminal 3, Embarque Internacional – Guarulhos – SP | `11222333000181` |
+| Paris 6 Petit (Shopping Anália Franco) | Av. Regente Feijó, 1739 – São Paulo – SP | `44555666000172` |
+| Paris 6 Petit (Shopping Cidade São Paulo) | Av. Paulista, 1230 – Bela Vista, São Paulo – SP | `77888999000163` |
+| Paris 6 Grande SP | Rua José Versolato, 111 – São Bernardo do Campo – SP | `15678912000104` |
 
-Contas de seed: Itaú, XP, BTG Pactual, Bradesco e Santander. Catálogo de conexão inclui também Nubank, Banco do Brasil, Caixa, Inter, C6, Sicoob e Sicredi.
-
-Período das fixtures: abril–setembro de 2026. Data de referência: **2026-10-02**.
+Contas de seed: Itaú, XP, BTG Pactual, Bradesco e Santander (uma inativa). Operações de **nov/2025 a out/2026**.
 
 ---
 
@@ -84,12 +87,18 @@ Período das fixtures: abril–setembro de 2026. Data de referência: **2026-10-
 
 | Pasta | Papel |
 |---|---|
-| [`frontend/`](frontend/) | Website React. É a aplicação demonstrável. |
-| [`backend/`](backend/) | API Spring Boot (usuários, filiais; contas/operações incompletas). |
+| [`frontend/`](frontend/) | Website React (JSX MVVM). Consome a API nas telas listadas abaixo. |
+| [`backend/`](backend/) | API Spring Boot + PostgreSQL + JWT + Swagger. |
 | [`wiki/`](wiki/) | Wiki: produto, uso, rotas, frontend, backend, domínio. |
 | [`docs/`](docs/) | Especificação de produto e design brief. |
 
-O frontend **não** chama a API. Estado da demo: fixtures + chaves `pd.*` no `localStorage`.
+### Ligado à API
+
+Login, dashboard, operações, conciliação, usuários, organização (filiais) e contas bancárias (cadastro e agrupamento em Bancos).
+
+### Ainda local (fixtures / `localStorage`)
+
+Extratos, documentos, DRE, fluxo de caixa, alertas, conexões (Open Finance simulado), IA, contas a pagar/receber e parâmetros locais de configuração.
 
 Onde a especificação fala de AWS, mensageria ou Open Finance real, trate como **destino**, não como código já entregue.
 
@@ -97,28 +106,20 @@ Onde a especificação fala de AWS, mensageria ou Open Finance real, trate como 
 
 ## Como rodar
 
-### Frontend (aplicação)
+Os dois processos precisam estar no ar: PostgreSQL, API (`:8080`) e Vite (`:5173`).
 
-Requisito: **Node.js 20+**.
+### 1. PostgreSQL
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+Crie o banco **`PARIS_DEVS`** e o usuário **`springuser`** / senha **`spring`** (os mesmos de `backend/src/main/resources/application.properties`).
 
-Abre em `http://localhost:5173` (ou a próxima porta livre, por exemplo `5174`).
+O Hibernate usa `ddl-auto=update` e **não executa** `schema.sql` nem `data.sql`. Sem o seed, a API sobe com tabelas vazias e o login falha.
 
-| Comando | Efeito |
-|---|---|
-| `npm run dev` | Servidor de desenvolvimento (Vite) |
-| `npm run build` | Typecheck (`tsc --noEmit`) + bundle |
-| `npm run preview` | Serve o `dist/` |
-| `npm run lint` | Oxlint |
+Na primeira vez (ou depois de dropar o banco), rode no Postgres, nesta ordem:
 
-Landing: `/`. Sistema após o login: `/dashboard`.
+1. [`backend/src/main/resources/schema.sql`](backend/src/main/resources/schema.sql)
+2. [`backend/src/main/resources/data.sql`](backend/src/main/resources/data.sql)
 
-### Backend (API)
+### 2. Backend (API)
 
 Requisito: **Java 21**. Maven Wrapper incluso.
 
@@ -134,38 +135,56 @@ cd backend
 mvnw.cmd spring-boot:run
 ```
 
-H2 em memória + springdoc (OpenAPI). As telas **não** consomem esses endpoints ainda.
+API em `http://localhost:8080`. Swagger em `http://localhost:8080/swagger-ui.html` (Authorize com Bearer).
+
+### 3. Frontend
+
+Requisito: **Node.js 20+**.
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Abre em `http://localhost:5173` (ou a próxima porta livre, por exemplo `5174`). Com `VITE_API_URL` vazio, o Vite faz proxy dos endpoints da API para `:8080`.
+
+| Comando | Efeito |
+|---|---|
+| `npm run dev` | Servidor de desenvolvimento (Vite) |
+| `npm run build` | Bundle de produção |
+| `npm run preview` | Serve o `dist/` |
+| `npm run lint` | Oxlint |
+
+Landing: `/`. Sistema após o login: `/dashboard`.
 
 ---
 
 ## Como entrar
 
-Não há cadastro público. Use um e-mail da tabela e **qualquer senha**.
+Não há cadastro público. Senha em texto puro no banco (sem BCrypt). O login devolve JWT; as demais rotas da API exigem `Authorization: Bearer`.
 
 1. `/` → **Acessar sistema**, ou vá a `/login`.
-2. E-mail da fixture + senha qualquer.
-3. Verificação em duas etapas: qualquer código de **6 dígitos**.
-4. Escolha o contexto (grupo ou um CNPJ).
-5. Abre `/dashboard`.
+2. E-mail e senha da tabela abaixo.
+3. Abre `/dashboard`.
 
 Idioma do login: Português (Brasil) ou English, no canto da barra.
 
-SSO: tela `/sso` preparada, sem provedor. Há opção de continuar com usuário de demonstração.
+SSO (`/sso`) e MFA (`/verificacao`) existem como telas de demonstração e **não** emitem JWT.
 
-| Pessoa | E-mail | Perfil |
-|---|---|---|
-| Marcelo Santos | `marcelo.santos@paris6.com.br` | Gestor |
-| Gabriela Veríssimo | `gabriela.verissimo@paris6.com.br` | Analista |
-| Ana Souza | `ana.souza@paris6.com.br` | Administrador |
-| Patrícia Rocha | `patricia.rocha@paris6.com.br` | Auditor |
+| Pessoa | E-mail | Senha | Cargo |
+|---|---|---|---|
+| Carlos Silva | `carlos@techsolutions.com` | `senha123` | Administrador |
+| Ana Souza | `ana@techsolutions.com` | `senha456` | Financeiro |
+| Pedro Santos | `pedro@inovacaodigital.com` | `senha789` | Gerente |
 
-Para voltar ao seed: limpe o `localStorage` deste origin (chaves `pd.*`).
+Sessão: `pd.usuario` e `pd.token` no `localStorage`. Token vale 8 horas. 401 limpa a sessão e manda para `/login?motivo=expirada`.
 
 ---
 
 ## Recorte, período e atalhos
 
-- **Topbar:** empresa, filial e mês. O recorte vale para saldo, extrato, conciliação e DRE.
+- **Topbar:** grupo ou filial e mês (`YYYY-MM`). O recorte vale para dashboard, operações, conciliação e contas.
 - **Menu:** Operação, Análise, Configuração. A lista rola; **Sair** e o Grupo Paris 6 ficam no rodapé.
 - **Sair:** confirma e encerra a sessão.
 - **Assistente (IA):** botão circular no canto inferior direito. Localiza saldo, DRE, conciliação, classificação e conexões — não classifica sozinho.
@@ -174,16 +193,16 @@ Para voltar ao seed: limpe o `localStorage` deste origin (chaves `pd.*`).
 
 ## Módulos e rotas
 
-Rotas públicas não exigem sessão. As demais passam por `ProtectedRoute` e o `AppShell`.
+Rotas públicas não exigem sessão. As demais passam por `ProtectedRoute` (usuário **e** token) e o `AppShell`.
 
 ### Públicas
 
 | Caminho | Tela |
 |---|---|
 | `/` | Landing |
-| `/login` | Entrar |
+| `/login` | Entrar (API + JWT) |
 | `/recuperar-senha` | Recuperar ou atualizar senha |
-| `/verificacao` | Duas etapas |
+| `/verificacao` | Duas etapas (demo) |
 | `/authenticator` | Autenticador (demo) |
 | `/sso` | SSO (provedor não configurado) |
 | `/senha-alterada` | Senha atualizada |
@@ -191,26 +210,30 @@ Rotas públicas não exigem sessão. As demais passam por `ProtectedRoute` e o `
 
 ### Contexto e operação
 
-| Caminho | Tela |
-|---|---|
-| `/contexto` | Escolher grupo ou CNPJ |
-| `/dashboard` | Visão financeira do dia |
-| `/conexoes` | Instituições e consentimento |
-| `/extratos` · `/extratos/importar` | Movimentações e importação |
-| `/documentos` | Central de documentos (lista distinta do extrato) |
-| `/conciliacao` | Conciliação e pendências |
-| `/ia` · `/ia/fila` · `/ia/revisao/:id` | Classificação e revisão humana |
-| `/contas-a-pagar` · `/contas-a-receber` | Agenda |
+| Caminho | Tela | Dados |
+|---|---|---|
+| `/dashboard` | Visão financeira do dia | API |
+| `/operacoes` | Lançamentos (CRUD) | API |
+| `/conciliacao` | Conciliação sobre `operacao` | API |
+| `/configuracoes/usuarios` | Cadastro de usuários | API |
+| `/configuracoes/organizacao` | Empresas / filiais | API |
+| `/configuracoes/contas` | Cadastro de contas bancárias | API |
+| `/configuracoes/bancos` | Instituições (leitura) | API |
+| `/conexoes` | Instituições e consentimento | fixture |
+| `/extratos` · `/extratos/importar` | Movimentações e importação | fixture |
+| `/documentos` | Central de documentos | fixture |
+| `/ia` · `/ia/fila` · `/ia/revisao/:id` | Classificação e revisão humana | fixture |
+| `/contas-a-pagar` · `/contas-a-receber` | Agenda | fixture |
 
 ### Análise e configuração
 
-| Caminho | Tela |
-|---|---|
-| `/dre` · `/dre/comparativa` | DRE gerencial |
-| `/fluxo-de-caixa` | Caixa realizado |
-| `/analytics` · `/alertas` | Indicadores e alertas |
-| `/plano-de-contas` | Plano gerencial |
-| `/configuracoes/*` | Perfil, usuários, CNPJs, Open Finance, IA, auditoria |
+| Caminho | Tela | Dados |
+|---|---|---|
+| `/dre` · `/dre/comparativa` | DRE gerencial | fixture |
+| `/fluxo-de-caixa` | Caixa realizado | fixture |
+| `/analytics` · `/alertas` | Indicadores e alertas | fixture |
+| `/plano-de-contas` | Plano gerencial | fixture |
+| `/configuracoes/*` | Demais parâmetros locais | misto |
 
 Mapa completo: [wiki/Rotas.md](wiki/Rotas.md).
 
@@ -218,15 +241,16 @@ Mapa completo: [wiki/Rotas.md](wiki/Rotas.md).
 
 ## Regras de domínio
 
-Implementadas em `frontend/src/domain/` — não devem viver só no JSX.
+Regras de produto em `frontend/src/models/domain/`. Persistência e contrato HTTP em `backend/` e `frontend/src/models/api/`.
 
 - **Caixa / extrato:** o que entrou ou saiu na conta, na data bancária.
 - **DRE gerencial:** só lançamento **classificado**. Não é o saldo bancário.
 - Transferência interna, aplicação e resgate **não** entram como receita ou despesa.
 - Documento e extrato **não** compartilham a mesma lista.
-- Conta desconectada ou com consentimento expirado **não** entra no saldo como zero; fica indisponível.
-- Toda reclassificação pede motivo e vai para a **auditoria**.
-- Catálogo de bancos (`institutions.ts`) é desacoplado do motor de conciliação.
+- Conta inativa **não** entra no saldo consolidado como zero.
+- Operação: `valor` sempre positivo; `tipoOperacao` `RECEBIMENTO` ou `PAGAMENTO` (no banco, ordinal 0/1).
+- Conciliação deste slice: categoria da operação (`deriveRecon`); sem tabela extra e sem matching de documento.
+- Catálogo de bancos (`institutions.js`) é desacoplado do motor de conciliação.
 
 Texto integral: especificação, seções 10–23 · [wiki/Dominio-e-regras.md](wiki/Dominio-e-regras.md).
 
@@ -235,11 +259,13 @@ Texto integral: especificação, seções 10–23 · [wiki/Dominio-e-regras.md](
 ## Arquitetura
 
 ```
-navegador  →  frontend (React, estado local)
-                 ↳ domain/ calcula DRE, caixa, conciliação e alertas nas fixtures
+navegador  →  frontend (React JSX, MVVM)
+                 ↳ models/api  →  Spring Boot :8080 (JWT Bearer)
+                 ↳ models/fixtures + localStorage (telas ainda locais)
 
-API Spring  →  usuários e filiais (H2)
-                 ↳ contas e operações ainda sem contrato completo
+API         →  PostgreSQL PARIS_DEVS
+                 ↳ filial → usuario
+                 ↳ filial → conta_bancaria → operacao
 ```
 
 Princípios (especificação): desacoplar banco específico do motor; não fixar no código limite, plano ou provedor que pertence à configuração; trilha em toda reclassificação; processamentos pesados, quando existirem, assíncronos.
@@ -248,22 +274,17 @@ Princípios (especificação): desacoplar banco específico do motor; não fixar
 
 ## Frontend
 
-Pasta [`frontend/`](frontend/). Stack: **React 19**, **TypeScript**, **Vite 8**, **Tailwind CSS v4**, **Recharts**, **React Router 7**.
+Pasta [`frontend/`](frontend/). Stack: **React 19**, **JSX**, **Vite 8**, **Tailwind CSS v4**, **Recharts**, **React Router 7**, **axios**, **lucide-react**.
 
 ```
 frontend/src/
   app/           rotas, guards, providers
-  pages/         uma tela por rota (auth, dash, ops, fin, conf, marketing)
-  features/      documentos, extratos, conciliação, IA, DRE, contas…
-  components/    ui/, layout/, charts/, BankLogo, BrandMark, AiChatbot
-  domain/        regras sem React
-  state/         AppContext + persistência local
-  data/          fixtures
+  views/         telas, layout e primitivos de UI
+  viewmodels/    estado e orquestração por módulo
+  models/        api/, domain/, fixtures, sessão
   lib/           formatação pt-BR e i18n do login
   styles/        tokens.css
 ```
-
-Regra de importação: UI → features → pages → app. `domain/` e `lib/` não importam componentes.
 
 README técnico: [`frontend/README.md`](frontend/README.md).
 
@@ -271,20 +292,23 @@ README técnico: [`frontend/README.md`](frontend/README.md).
 
 ## Backend
 
-Pasta [`backend/`](backend/). **Spring Boot** (parent 4.1.1), **Java 21**, JPA, Bean Validation, H2, springdoc-openapi.
+Pasta [`backend/`](backend/). **Spring Boot** 4.1.1, **Java 21**, JPA, Bean Validation, PostgreSQL, springdoc-openapi 3.1.0, jjwt 0.12.6. Sem `spring-boot-starter-security`.
 
 Pacote: `com.parisdevs.api`.
 
 | Recurso | Caminho | Situação |
 |---|---|---|
+| Login | `POST /usuarios/login` | público; devolve `{ token, usuario }` |
 | Usuários | `/usuarios` | CRUD |
 | Filiais | `/filiais` | CRUD |
-| Operações | `/operacoes` | Controller criado; implementação pendente |
-| Contas bancárias | — | Controller vazio |
+| Contas bancárias | `/contasBancarias` | CRUD |
+| Operações | `/operacoes` | CRUD |
+| Dashboard | `GET /dashboard/kpis` | KPIs do recorte (`inicio`, `fim`) |
+| Swagger | `/swagger-ui.html` | OpenAPI; Authorize Bearer |
 
-Camadas: `controller` → `service` → `repository`, com `dto`, `mapper`, `entity`, `enums` e exceções de domínio.
+Demais rotas da API exigem JWT. CORS libera `http://localhost:5173` e `5174`.
 
-Próximo passo: autenticar de fato, expor contas e operações, e substituir as fixtures do frontend por HTTP — sem copiar regra de DRE ou limite para código quando isso é configuração.
+Camadas: `controller` → `service` → `repository`, com `dto`, `mapper`, `entity`, `enums` e exceções de domínio. Filtro JWT: `JwtAuthFilter` (`OncePerRequestFilter`).
 
 ---
 
@@ -306,7 +330,6 @@ Próximo passo: autenticar de fato, expor contas e operações, e substituir as 
 | [docs/especificacao-plataforma-conciliacao-financeira.md](docs/especificacao-plataforma-conciliacao-financeira.md) | Produto, regras, arquitetura-alvo |
 | [docs/design-brief-paris-devs.md](docs/design-brief-paris-devs.md) | Personas, tokens, telas (Figma/Stitch) |
 | [frontend/README.md](frontend/README.md) | Arquitetura do website |
-| [frontend/docs/estrutura-checklist.md](frontend/docs/estrutura-checklist.md) | Extração de páginas em features |
 
 ---
 

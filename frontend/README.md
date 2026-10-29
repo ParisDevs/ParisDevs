@@ -1,16 +1,18 @@
 # Paris Devs — frontend
 
-Website interno de gestão financeira do Grupo Paris 6. Stack do design brief: React, TypeScript, Vite, Tailwind CSS e Recharts.
+Website interno de gestão financeira do Grupo Paris 6. Stack: React 19 (JSX), Vite 8, Tailwind CSS v4, Recharts, React Router 7 e axios.
 
-## Arquitetura (componentes)
+A API Spring Boot precisa estar em `http://localhost:8080`. Com `VITE_API_URL` vazio, o Vite faz proxy de `/usuarios`, `/filiais`, `/contasBancarias`, `/operacoes` e `/dashboard/kpis`.
 
-- **`src/app/`** — bootstrap: `App`, `routes`, `providers`, guards de rota.
-- **`src/pages/`** — uma rota por módulo; orquestram layout e reexportam features quando necessário.
-- **`src/features/`** — domínio de produto: ops (`documentos`, `extratos`, `conciliacao`, `ia`, `transactions`), fin (`plano-contas`, `contas`, `fluxo-caixa`, `dre`, `analytics`, `alertas`) e config (`configuracao/core`, `empresa`, `integracoes`, `auditoria`).
-- **`src/components/ui/`** — primitivos reutilizáveis (Button, Card, Table…); **`components/layout/`** e **`components/charts/`** — shell e gráficos.
-- **`src/domain/`** + **`src/lib/`** — regras e utilitários sem React; **`src/state/`** — contexto global; **`src/data/`** — fixtures.
+## Arquitetura (MVVM)
 
-Regra: UI → features → pages → app; domain/lib não importam componentes.
+- **`src/app/`** — rotas, guards e providers.
+- **`src/views/`** — telas, layout e primitivos de UI.
+- **`src/viewmodels/`** — estado e orquestração por módulo.
+- **`src/models/`** — `api/` (HTTP), `domain/` (regras), fixtures e sessão (`pd.usuario`, `pd.token`).
+- **`src/lib/`** — formatação pt-BR e i18n do login.
+
+Telas na API: login, dashboard, operações, conciliação, usuários, organização e contas bancárias. Extratos, DRE, fluxo de caixa, alertas e conexões ainda usam fixture / `localStorage`.
 
 ## Como rodar
 
@@ -19,18 +21,19 @@ npm install
 npm run dev
 ```
 
-Abre em `http://localhost:5173`. A landing está em `/`; o sistema, após o login, em `/dashboard`. Sem cadastro público: entre com um e-mail das fixtures, por exemplo `gabriela.verissimo@paris6.com.br` ou `marcelo.santos@paris6.com.br`, e qualquer senha. SSO e MFA são simulados.
+Abre em `http://localhost:5173`. A landing está em `/`; o sistema, após o login, em `/dashboard`. Sem cadastro público.
 
-Wiki do repositório: [`../wiki/Home.md`](../wiki/Home.md).
+Wiki do repositório: [`../wiki/Home.md`](../wiki/Home.md). Passo a passo completo (Postgres + seed + API): [`../README.md`](../README.md).
 
 ## Contas de demonstração
 
-| Pessoa | E-mail | Perfil |
-|---|---|---|
-| Marcelo Santos | marcelo.santos@paris6.com.br | Gestor |
-| Gabriela Veríssimo | gabriela.verissimo@paris6.com.br | Analista |
-| Ana Souza | ana.souza@paris6.com.br | Administrador |
-| Patrícia Rocha | patricia.rocha@paris6.com.br | Auditor |
+| Pessoa | E-mail | Senha | Cargo |
+|---|---|---|---|
+| Carlos Silva | carlos@techsolutions.com | senha123 | Administrador |
+| Ana Souza | ana@techsolutions.com | senha456 | Financeiro |
+| Pedro Santos | pedro@inovacaodigital.com | senha789 | Gerente |
+
+SSO e MFA são telas de demonstração e não emitem JWT.
 
 ## Telas
 
