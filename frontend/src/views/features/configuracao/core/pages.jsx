@@ -1,0 +1,597 @@
+import { useState } from 'react'
+import { Link, Navigate, useParams } from 'react-router-dom'
+import { Pencil, Trash2 } from 'lucide-react'
+import { Badge, Banner, Button, Card, Empty, Field, Input, Kpi, Modal, PageHeader, Select, Table, Td, Kv, Toast } from '@/views/ui'
+import { CARGOS, cargoLabel } from '@/models/domain/usuario'
+import { PERMISSION_CARGOS, PERMISSION_MODULES, permissionLabel, permissionLevel } from '@/models/domain/configuracao'
+import { initials } from '@/lib/format'
+import { useAppViewModel } from '@/viewmodels/AppViewModel'
+import { useUsuariosViewModel } from '@/viewmodels/configuracao/useUsuariosViewModel'
+import { useConfiguracaoViewModel } from '@/viewmodels/configuracao/useConfiguracaoViewModel'
+import { useOrganizacaoViewModel } from '@/viewmodels/configuracao/useOrganizacaoViewModel'
+import { formatCnpj, mascararToken } from '@/models/domain/filial'
+import { CardAlso, CheckRow, ConfigCrumbs, SettingsNavCard, SettingsSection } from '@/views/features/configuracao/shell'
+
+function cargoTone(cargo) {
+  return cargo === 'ADMINISTRADOR' ? 'success' : 'neutral'
+}
+
+export function ConfigHomePage() {
+  const { nome, email, cargoNome, filialNome, sections } = useConfiguracaoViewModel()
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        kicker="Configuração"
+        title="Configurações"
+        subtitle="Conta, organização e parâmetros locais deste dispositivo. Open Finance ainda não está operacional."
+      />
+      <Card className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primaria text-[12px] font-bold text-white">
+            {initials(nome || email || 'U')}
+          </span>
+          <div className="min-w-0">
+            <p className="t-h3 truncate">{nome || '—'}</p>
+            <p className="t-apoio truncate text-texto-secundario">{email || '—'}</p>
+            <p className="t-apoio mt-1 truncate text-faint">
+              {cargoNome}
+              {filialNome ? ` · ${filialNome}` : ''}
+            </p>
+          </div>
+        </div>
+        <Link to="/configuracoes/perfil">
+          <Button variant="secondary">Editar perfil</Button>
+        </Link>
+      </Card>
+      {sections.map((section) => (
+        <SettingsSection key={section.id} title={section.title}>
+          {section.items.map((item) => (
+            <SettingsNavCard
+              key={item.to}
+              to={item.to}
+              icon={item.Icon}
+              title={item.title}
+              description={item.description}
+            />
+          ))}
+        </SettingsSection>
+      ))}
+    </div>
+  )
+}
+
+export function PerfilPage() {
+  const { admin, nome, email, cargoNome, filialNome } = useConfiguracaoViewModel()
+  return (
+    <div>
+      <PageHeader kicker="Configuração" title="Meu perfil" subtitle="Dados da sessão atual. A alteração cadastral fica no cadastro de usuários." />
+      <ConfigCrumbs current="Meu perfil" />
+      <Card className="max-w-xl space-y-4">
+        <Banner tone="info">
+          Nome e e-mail vêm do login. Este slice não grava perfil no servidor.
+        </Banner>
+        <Kv
+          items={[
+            { label: 'Nome', value: nome || '—' },
+            { label: 'E-mail', value: email || '—' },
+            { label: 'Cargo', value: cargoNome },
+            { label: 'Filial', value: filialNome || '—' },
+          ]}
+        />
+        <CardAlso>
+          {admin ? (
+            <Link to="/configuracoes/usuarios">
+              <Button variant="secondary">Cadastro de usuários</Button>
+            </Link>
+          ) : null}
+          <Link to="/configuracoes/preferencias">
+            <Button variant="secondary">Preferências</Button>
+          </Link>
+          <Link to="/configuracoes/seguranca">
+            <Button variant="secondary">Segurança</Button>
+          </Link>
+        </CardAlso>
+      </Card>
+    </div>
+  )
+}
+
+export function PreferenciasPage() {
+  const { config, saveConfig } = useAppViewModel()
+  const [toast, setToast] = useState(null)
+  const kinds = {
+    financeiro: 'Financeiro',
+    conciliacao: 'Conciliação',
+    classificacao: 'Classificação',
+    integracao: 'Conexões bancárias',
+  }
+  return (
+    <div>
+      <PageHeader kicker="Configuração" title="Preferências" subtitle="Tema, alertas e uso geral. As escolhas ficam neste navegador." />
+      <ConfigCrumbs current="Preferências" />
+      <Card className="max-w-xl space-y-4">
+        <Banner tone="info">Preferências são gravadas só neste dispositivo.</Banner>
+        <Field label="Tema">
+          <Select value={config.theme} onChange={(e) => saveConfig({ theme: e.target.value })}>
+            <option value="light">Claro</option>
+            <option value="dark">Escuro</option>
+          </Select>
+        </Field>
+        <h2 className="t-h3 pt-2">Notificações</h2>
+        <CheckRow
+          checked={config.notifications.inApp}
+          onChange={(e) => saveConfig({ notifications: { ...config.notifications, inApp: e.target.checked } })}
+        >
+          Alertas no aplicativo
+        </CheckRow>
+        <CheckRow
+          checked={config.notifications.email}
+          onChange={(e) => saveConfig({ notifications: { ...config.notifications, email: e.target.checked } })}
+        >
+          Resumo por e-mail (quando o envio estiver configurado)
+        </CheckRow>
+        {Object.entries(kinds).map(([key, label]) => (
+          <CheckRow
+            key={key}
+            checked={!!config.notifications.kinds[key]}
+            onChange={(e) => saveConfig({
+              notifications: {
+                ...config.notifications,
+                kinds: { ...config.notifications.kinds, [key]: e.target.checked },
+              },
+            })}
+          >
+            {label}
+          </CheckRow>
+        ))}
+        <Button onClick={() => setToast('Preferências salvas neste dispositivo.')}>Salvar</Button>
+      </Card>
+      <Toast message={toast} />
+    </div>
+  )
+}
+
+export function SegurancaPage() {
+  const { encerrarSessao } = useConfiguracaoViewModel()
+  const [senhaAtual, setSenhaAtual] = useState('')
+  const [senhaNova, setSenhaNova] = useState('')
+  const [toast, setToast] = useState(null)
+  return (
+    <div className="space-y-4">
+      <PageHeader kicker="Configuração" title="Segurança" subtitle="Sessão deste dispositivo. Troca de senha e MFA ainda são demonstração." />
+      <ConfigCrumbs current="Segurança" />
+      <Card className="max-w-xl space-y-4">
+        <h2 className="t-h3">Senha</h2>
+        <Banner tone="info">
+          A troca de senha não chama a API neste slice. MFA ainda não está vinculado a um autenticador real.
+        </Banner>
+        <Field label="Senha atual">
+          <Input type="password" value={senhaAtual} onChange={(e) => setSenhaAtual(e.target.value)} autoComplete="current-password" />
+        </Field>
+        <Field label="Nova senha">
+          <Input type="password" value={senhaNova} onChange={(e) => setSenhaNova(e.target.value)} autoComplete="new-password" />
+        </Field>
+        <Button
+          onClick={() => {
+            setToast('Senha não é alterada no servidor neste ambiente de demonstração.')
+            setSenhaAtual('')
+            setSenhaNova('')
+          }}
+        >
+          Alterar senha
+        </Button>
+        <Link to="/authenticator">
+          <Button variant="secondary">Abrir MFA (demonstração)</Button>
+        </Link>
+      </Card>
+      <Card className="max-w-xl space-y-4">
+        <h2 className="t-h3">Sessão</h2>
+        <p className="t-body text-texto-secundario">Navegador atual · sessão local. Outros dispositivos não são rastreados.</p>
+        <Button variant="secondary" onClick={encerrarSessao}>
+          Encerrar sessão deste dispositivo
+        </Button>
+      </Card>
+      <Toast message={toast} />
+    </div>
+  )
+}
+
+export function UsuariosPage() {
+  const {
+    q,
+    setQ,
+    cargo,
+    setCargo,
+    filialId,
+    setFilialId,
+    filiais,
+    rows,
+    kpis,
+    carregando,
+    erro,
+    toast,
+    formMode,
+    form,
+    formErro,
+    patchForm,
+    openCreate,
+    openEdit,
+    closeForm,
+    saveForm,
+    pendingDelete,
+    setPendingDelete,
+    requestDelete,
+    saving,
+    remove,
+    empty,
+    emptyFiltro,
+  } = useUsuariosViewModel()
+
+  return (
+    <div>
+      <PageHeader
+        kicker="Configuração"
+        title="Usuários"
+        subtitle="Cadastro de acesso à organização. Nome, e-mail, cargo e filial no banco."
+        actions={<Button onClick={openCreate}>Novo usuário</Button>}
+      />
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <Kpi label="Total" value={String(kpis.total)} />
+        <Kpi label="Administrador" value={String(kpis.administrador)} />
+        <Kpi label="Financeiro" value={String(kpis.financeiro)} />
+        <Kpi label="Gerente" value={String(kpis.gerente)} />
+        <Kpi label="Contador" value={String(kpis.contador)} />
+      </div>
+      {erro ? <p className="t-body mb-4 text-erro">{erro}</p> : null}
+      {carregando ? <p className="t-body text-texto-secundario">Carregando...</p> : null}
+      {!carregando ? (
+        <Table
+          columns={['Nome', 'E-mail', 'Cargo', 'Filial', 'Ações']}
+          empty={
+            empty || emptyFiltro ? (
+              <Empty action={empty ? <Button onClick={openCreate}>Novo usuário</Button> : undefined}>
+                {empty ? 'Nenhum usuário cadastrado.' : 'Nenhum usuário neste filtro.'}
+              </Empty>
+            ) : null
+          }
+          footer={<span>Exibindo {rows.length} usuários</span>}
+          toolbar={
+            <div className="grid gap-3 md:grid-cols-3">
+              <Input
+                className="max-w-md"
+                placeholder="Buscar nome, e-mail ou cargo"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                aria-label="Buscar usuários"
+              />
+              <Select value={cargo} onChange={(e) => setCargo(e.target.value)} aria-label="Cargo">
+                <option value="">Cargo</option>
+                {CARGOS.map((c) => (
+                  <option key={c} value={c}>
+                    {cargoLabel(c)}
+                  </option>
+                ))}
+              </Select>
+              <Select value={filialId} onChange={(e) => setFilialId(e.target.value)} aria-label="Filial">
+                <option value="">Filial</option>
+                {filiais.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.nome}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          }
+        >
+          {rows.map((u) => (
+            <tr key={u.id}>
+              <Td>{u.nome || '—'}</Td>
+              <Td>{u.email || '—'}</Td>
+              <Td>
+                <Badge tone={cargoTone(u.cargo)}>{cargoLabel(u.cargo)}</Badge>
+              </Td>
+              <Td>{u.filialNome || '—'}</Td>
+              <Td>
+                <div className="flex flex-wrap gap-1">
+                  <Button variant="ghost" className="h-8 px-2" title="Editar" aria-label="Editar" onClick={() => openEdit(u)}>
+                    <Pencil size={14} />
+                  </Button>
+                  <Button variant="ghost" className="h-8 px-2" title="Excluir" aria-label="Excluir" onClick={() => requestDelete(u)}>
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              </Td>
+            </tr>
+          ))}
+        </Table>
+      ) : null}
+      <div className="mt-4">
+        <Link className="t-label" to="/configuracoes/permissoes">
+          Perfis e permissões
+        </Link>
+      </div>
+      <Modal
+        title={formMode === 'criar' ? 'Novo usuário' : 'Editar usuário'}
+        subtitle={
+          formMode === 'criar'
+            ? 'Informe os dados de acesso. A senha é a mesma usada no login.'
+            : 'Altere os dados. Deixe a senha em branco para manter a atual.'
+        }
+        open={!!formMode}
+        onClose={closeForm}
+        footer={
+          <>
+            <Button type="button" variant="secondary" onClick={closeForm}>
+              Cancelar
+            </Button>
+            <Button type="submit" form="usuario-form-dialog" disabled={saving}>
+              Salvar
+            </Button>
+          </>
+        }
+      >
+        <form id="usuario-form-dialog" onSubmit={saveForm} className="space-y-4" noValidate>
+          <Field label="Nome">
+            <Input value={form.nome} onChange={(e) => patchForm('nome', e.target.value)} />
+          </Field>
+          <Field label="E-mail">
+            <Input type="email" value={form.email} onChange={(e) => patchForm('email', e.target.value)} />
+          </Field>
+          <Field label="Senha">
+            <Input
+              type="password"
+              value={form.senha}
+              onChange={(e) => patchForm('senha', e.target.value)}
+              placeholder={formMode === 'editar' ? 'Deixe em branco para manter' : ''}
+              autoComplete={formMode === 'criar' ? 'new-password' : 'off'}
+            />
+          </Field>
+          <Field label="Cargo">
+            <Select value={form.cargo} onChange={(e) => patchForm('cargo', e.target.value)}>
+              {CARGOS.map((c) => (
+                <option key={c} value={c}>
+                  {cargoLabel(c)}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Filial">
+            <Select value={form.idFilial} onChange={(e) => patchForm('idFilial', e.target.value)}>
+              <option value="">Selecione a filial</option>
+              {filiais.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.nome}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          {formErro ? <p className="t-body text-erro">{formErro}</p> : null}
+        </form>
+      </Modal>
+      <Modal
+        title="Excluir usuário"
+        open={!!pendingDelete}
+        onClose={() => setPendingDelete(null)}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setPendingDelete(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={remove} disabled={saving}>
+              Excluir
+            </Button>
+          </>
+        }
+      >
+        <p className="t-body text-texto-secundario">
+          Deseja excluir {pendingDelete?.nome ? pendingDelete.nome : 'este usuário'}? A ação não pode ser desfeita.
+        </p>
+      </Modal>
+      <Toast message={toast} />
+    </div>
+  )
+}
+
+export function UsuarioEditarPage() {
+  const { id } = useParams()
+  return <Navigate to="/configuracoes/usuarios" replace state={{ editar: id }} />
+}
+
+export function PermissoesPage() {
+  return (
+    <div>
+      <PageHeader
+        kicker="Configuração"
+        title="Perfis e permissões"
+        subtitle="Matriz ilustrativa pelos cargos do cadastro. Nada é gravado no banco."
+      />
+      <ConfigCrumbs current="Permissões" />
+      <Banner tone="info" className="mb-4">
+        O acesso real segue o cargo do usuário. Esta tabela não persiste permissão.
+      </Banner>
+      <Table columns={['Módulo', ...PERMISSION_CARGOS.map(cargoLabel)]}>
+        {PERMISSION_MODULES.map((modulo, i) => (
+          <tr key={modulo}>
+            <Td>{modulo}</Td>
+            {PERMISSION_CARGOS.map((cargo) => (
+              <Td key={cargo}>{permissionLabel(permissionLevel(cargo, i))}</Td>
+            ))}
+          </tr>
+        ))}
+      </Table>
+    </div>
+  )
+}
+
+export function OrganizacaoPage() {
+  const {
+    admin,
+    groupName,
+    q,
+    setQ,
+    rows,
+    total,
+    carregando,
+    erro,
+    toast,
+    formMode,
+    form,
+    formErro,
+    patchForm,
+    openCreate,
+    openEdit,
+    closeForm,
+    saveForm,
+    pendingDelete,
+    setPendingDelete,
+    requestDelete,
+    saving,
+    remove,
+    empty,
+    emptyFiltro,
+  } = useOrganizacaoViewModel()
+
+  if (!admin) {
+    return (
+      <div>
+        <PageHeader kicker="Configuração" title="Organização" />
+        <ConfigCrumbs current="Organização" />
+        <Empty>
+          Sem permissão.
+        </Empty>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <PageHeader
+        kicker="Configuração"
+        title="Organização"
+        subtitle="Cadastro das empresas do grupo. O seletor da topbar usa esta lista."
+        actions={<Button onClick={openCreate}>Nova empresa</Button>}
+      />
+      <ConfigCrumbs current="Organização" />
+      <Card className="mb-4 max-w-2xl space-y-4">
+        <Kv
+          items={[
+            { label: 'Nome', value: groupName },
+            { label: 'Empresas', value: String(total) },
+          ]}
+        />
+        <CardAlso>
+          <Link to="/configuracoes/cnpjs">
+            <Button variant="secondary">CNPJs</Button>
+          </Link>
+          <Link to="/configuracoes/moeda">
+            <Button variant="secondary">Moeda e fuso</Button>
+          </Link>
+        </CardAlso>
+      </Card>
+      {erro ? <p className="t-body mb-4 text-erro">{erro}</p> : null}
+      {carregando ? <p className="t-body text-texto-secundario">Carregando...</p> : null}
+      {!carregando ? (
+        <Table
+          columns={['Razão social', 'CNPJ', 'Endereço', 'Token', 'Ações']}
+          empty={
+            empty || emptyFiltro ? (
+              <Empty action={empty ? <Button onClick={openCreate}>Nova empresa</Button> : undefined}>
+                {empty ? 'Nenhuma empresa cadastrada.' : 'Nenhuma empresa neste filtro.'}
+              </Empty>
+            ) : null
+          }
+          footer={<span>Exibindo {rows.length} empresas</span>}
+          toolbar={
+            <Input
+              className="max-w-md"
+              placeholder="Buscar razão social ou CNPJ"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              aria-label="Buscar empresas"
+            />
+          }
+        >
+          {rows.map((f) => (
+            <tr key={f.id}>
+              <Td>{f.razaoSocial || '—'}</Td>
+              <Td nowrap>{formatCnpj(f.cnpj) || '—'}</Td>
+              <Td>{f.endereco || '—'}</Td>
+              <Td>{mascararToken(f.token)}</Td>
+              <Td>
+                <div className="flex flex-wrap gap-1">
+                  <Button variant="ghost" className="h-8 px-2" title="Editar" aria-label="Editar" onClick={() => openEdit(f)}>
+                    <Pencil size={14} />
+                  </Button>
+                  <Button variant="ghost" className="h-8 px-2" title="Excluir" aria-label="Excluir" onClick={() => requestDelete(f)}>
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              </Td>
+            </tr>
+          ))}
+        </Table>
+      ) : null}
+      <Modal
+        title={formMode === 'criar' ? 'Nova empresa' : 'Editar empresa'}
+        subtitle={
+          formMode === 'criar'
+            ? 'Informe os dados da empresa. O seletor da topbar passa a listá-la ao salvar.'
+            : 'Altere os dados. O CNPJ deve ter 14 dígitos. O token é obrigatório.'
+        }
+        open={!!formMode}
+        onClose={closeForm}
+        footer={
+          <>
+            <Button type="button" variant="secondary" onClick={closeForm}>
+              Cancelar
+            </Button>
+            <Button type="submit" form="empresa-form-dialog" disabled={saving}>
+              Salvar
+            </Button>
+          </>
+        }
+      >
+        <form id="empresa-form-dialog" onSubmit={saveForm} className="space-y-4" noValidate>
+          <Field label="Razão social">
+            <Input value={form.razaoSocial} onChange={(e) => patchForm('razaoSocial', e.target.value)} />
+          </Field>
+          <Field label="CNPJ">
+            <Input value={form.cnpj} onChange={(e) => patchForm('cnpj', e.target.value)} inputMode="numeric" />
+          </Field>
+          <Field label="Endereço">
+            <Input value={form.endereco} onChange={(e) => patchForm('endereco', e.target.value)} />
+          </Field>
+          <Field label="Token">
+            <Input
+              type="password"
+              value={form.token}
+              onChange={(e) => patchForm('token', e.target.value)}
+              autoComplete="off"
+            />
+          </Field>
+          {formErro ? <p className="t-body text-erro">{formErro}</p> : null}
+        </form>
+      </Modal>
+      <Modal
+        title="Excluir empresa"
+        open={!!pendingDelete}
+        onClose={() => setPendingDelete(null)}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setPendingDelete(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={remove} disabled={saving}>
+              Excluir
+            </Button>
+          </>
+        }
+      >
+        <p className="t-body text-texto-secundario">
+          Deseja excluir {pendingDelete?.razaoSocial ? pendingDelete.razaoSocial : 'esta empresa'}? A ação não pode ser desfeita.
+        </p>
+      </Modal>
+      <Toast message={toast} />
+    </div>
+  )
+}
