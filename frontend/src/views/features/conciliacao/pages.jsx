@@ -1,16 +1,14 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
-import { Banner, Button, Card, Drawer, Empty, Field, Kpi, Modal, PageHeader, Select, Table, Td, Textarea, Toast, Kv } from '@/views/ui'
-import { reconLabels } from '@/models/fixtures'
+import { Badge, Banner, Button, Card, Empty, Field, Input, Modal, PageHeader, Select, Table, Td, Textarea, Toast, Kv } from '@/views/ui'
 import { extractCnpj } from '@/models/domain/banking'
 import { lookupCnpj } from '@/models/domain/cnpjLookup'
+import { origemProtegida } from '@/models/domain/dashboardBanking'
 import { GastosPorCategoriaCard } from '@/views/charts'
-import { gastoChartGroup } from '@/models/domain/finance'
 import {
   GASTO_GROUP_META,
   buildGastoCategoriaRows,
-  buildIaCategoriaRows,
   conciliacaoCategoriaHref,
   conciliacaoFolhaHref,
   conciliacaoSubHref,
@@ -22,22 +20,25 @@ import {
   summarizeTransactions,
   txInGastoGroup,
 } from '@/models/domain/reconCategories'
-import { date, money, percent } from '@/lib/format'
+import { date, money } from '@/lib/format'
 import { cn } from '@/lib/cn'
 import { useAppViewModel } from '@/viewmodels/AppViewModel'
 import {
   useConciliacaoDetalheViewModel,
   useConciliacaoViewModel,
 } from '@/viewmodels/conciliacao/useConciliacaoViewModel'
-import { ReconStatusBadge } from '@/views/features/transactions/components/ReconStatusBadge'
+import {
+  baixarConciliacao,
+  filtrarSaidas,
+  nomeArquivoConciliacao,
+  rotuloSituacao,
+} from '@/views/features/conciliacao/helpers'
 
-function ReconSectionTitle({ title, subtitle }) {
-  return (
-    <div className="border-b border-borda px-4 py-3.5">
-      <h2 className="text-[15px] font-semibold text-texto">{title}</h2>
-      <p className="t-apoio mt-0.5 text-texto-secundario">{subtitle}</p>
-    </div>
-  )
+export { ConciliacaoInsightsPage } from '@/views/features/conciliacao/insightsPage'
+
+function SituacaoBadge({ recon }) {
+  const classificado = recon === 'conciliado'
+  return <Badge tone={classificado ? 'success' : 'warning'}>{rotuloSituacao(recon)}</Badge>
 }
 
 function ConciliacaoStatus({ carregando, erro }) {
@@ -58,223 +59,265 @@ function ConciliacaoStatus({ carregando, erro }) {
   return null
 }
 
-function ConciliacaoIaPorCategoriaTable({ saidas, rows, categorias, classificar, salvandoId }) {
-  const [expanded, setExpanded] = useState(null)
-  const [toast, setToast] = useState(null)
+function StatusItem({ label, value, hint, to, alert }) {
+  const inner = (
+    <div className="flex min-h-[72px] min-w-[148px] flex-col justify-center bg-superficie px-4 py-3">
+      <p className="text-[11px] font-semibold tracking-[0.06em] text-texto-secundario uppercase">{label}</p>
+      <p className={cn('mt-1 truncate text-[22px] font-semibold leading-none tabular-nums', alert ? 'text-alerta-texto' : 'text-texto')}>
+        {value}
+      </p>
+      <p className="mt-1 truncate text-[12px] text-faint">{hint || '\u00a0'}</p>
+    </div>
+  )
+  if (!to) return inner
+  return (
+    <Link to={to} className="min-w-[148px] flex-1">
+      {inner}
+    </Link>
+  )
+}
 
-  const porGrupo = useMemo(() => {
-    const map = new Map()
-    for (const t of saidas) {
-      const g = gastoChartGroup(t.category)
-      const list = map.get(g) ?? []
-      list.push(t)
-      map.set(g, list)
-    }
-    for (const list of map.values()) {
-      list.sort((a, b) => (a.date < b.date ? 1 : -1))
-    }
-    return map
-  }, [saidas])
+function StatusFaixa({ kpis }) {
+  return (
+    <div className="flex gap-px overflow-x-auto rounded-[10px] border border-borda bg-borda">
+      <StatusItem
+        label="Classificados"
+        value={String(kpis.conciliado)}
+        hint={money(kpis.valorClassificado)}
+        to="/conciliacao/pendencias?estado=conciliado"
+      />
+      <StatusItem
+        label="Sem categoria"
+        value={String(kpis.pendente)}
+        hint={money(kpis.valorPendente)}
+        to="/conciliacao/pendencias?estado=pendente"
+        alert={kpis.pendente > 0}
+      />
+      <StatusItem
+        label="Saídas no período"
+        value={String(kpis.total)}
+        hint="Recorte do menu"
+      />
+      <StatusItem
+        label="Valor sem categoria"
+        value={money(kpis.valorPendente)}
+        hint={kpis.pendente ? `${kpis.pendente} a classificar` : 'Tudo classificado'}
+        alert={kpis.valorPendente > 0}
+      />
+    </div>
+  )
+}
+
+function CategoriaCrumbs({ groupId, meta, sub, subDef, folha, leafDef }) {
+  return (
+    <nav className="mb-4 flex flex-wrap items-center gap-1 text-[13px] text-texto-secundario" aria-label="Navegação">
+      <Link to="/conciliacao" className="font-medium text-primaria hover:underline">Conciliação</Link>
+      <ChevronRight size={14} className="text-faint" aria-hidden />
+      {sub && subDef ? (
+        <Link to={conciliacaoCategoriaHref(groupId)} className="font-medium text-primaria hover:underline">{meta.label}</Link>
+      ) : (
+        <span className="font-medium text-texto">{meta.label}</span>
+      )}
+      {sub && subDef ? (
+        <>
+          <ChevronRight size={14} className="text-faint" aria-hidden />
+          {folha && leafDef ? (
+            <Link to={conciliacaoSubHref(groupId, sub)} className="font-medium text-primaria hover:underline">{subDef.label}</Link>
+          ) : (
+            <span className="font-medium text-texto">{subDef.label}</span>
+          )}
+        </>
+      ) : null}
+      {folha && leafDef ? (
+        <>
+          <ChevronRight size={14} className="text-faint" aria-hidden />
+          <span className="font-medium text-texto">{leafDef.label}</span>
+        </>
+      ) : null}
+    </nav>
+  )
+}
+
+function TabelaTrabalho({
+  saidas,
+  categorias,
+  classificar,
+  salvandoId,
+  period,
+  onToast,
+  estadoInicial = 'todos',
+  mostrarSituacao = true,
+}) {
+  const [busca, setBusca] = useState('')
+  const [situacao, setSituacao] = useState(estadoInicial)
+  const rows = useMemo(
+    () => filtrarSaidas(saidas, { busca, situacao }),
+    [saidas, busca, situacao],
+  )
+
+  function exportar() {
+    if (!rows.length) return
+    const classificados = situacao === 'conciliado' || (situacao === 'todos' && rows.every((t) => t.recon === 'conciliado'))
+    const ok = baixarConciliacao(nomeArquivoConciliacao(period, classificados), rows)
+    if (ok) onToast('Planilha baixada.')
+  }
 
   return (
-    <>
-      <Table
-        columns={['Categoria', 'Lançamentos', 'Valor', 'Participação', 'Conciliados', 'Pendentes', 'Parte IA', 'Confiança média', '']}
-        empty={!rows.length ? <Empty>Nenhuma saída no período.</Empty> : undefined}
-      >
-        {rows.flatMap((row) => {
-          const open = expanded === row.id
-          const items = porGrupo.get(row.id) ?? []
-          return [
-            <tr key={row.id} className={cn(open && 'bg-superficie-2')}>
-              <Td>
-                <Link to={conciliacaoCategoriaHref(row.id)} className="font-medium text-primaria hover:underline">
-                  {row.label}
-                </Link>
-              </Td>
-              <Td className="num">{row.count}</Td>
-              <Td className="num">{money(-row.amount)}</Td>
-              <Td className="num">{percent(row.pct, 0)}</Td>
-              <Td className="num">{row.conc}</Td>
-              <Td className="num">{row.pend > 0 ? <span className="font-medium text-alerta-texto">{row.pend}</span> : row.pend}</Td>
-              <Td>
-                {row.ia}/{row.count}
-                <span className="t-apoio text-faint"> ({row.iaPct}%)</span>
-              </Td>
-              <Td className="num">{row.conf}%</Td>
-              <Td className="text-right">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-8 px-2 text-[13px]"
-                  onClick={() => setExpanded(open ? null : row.id)}
-                >
-                  {open ? 'Fechar' : 'Editar'}
-                </Button>
-              </Td>
-            </tr>,
-            open ? (
-              <tr key={`${row.id}-edit`}>
-                <td colSpan={9} className="border-b border-borda bg-superficie-2 px-4 py-4">
-                  <p className="t-label mb-3 text-texto-secundario">Lançamentos · {row.label}</p>
-                  <div className="overflow-x-auto rounded-[10px] border border-borda bg-superficie">
-                    <table className="w-full min-w-[640px] border-collapse text-left">
-                      <thead>
-                        <tr>
-                          {['Data', 'Descrição', 'Valor', 'Conciliação', 'Categoria'].map((h) => (
-                            <th
-                              key={h}
-                              className="border-b border-borda bg-superficie-2 px-3 py-2 text-[11px] font-semibold tracking-[0.05em] text-faint uppercase"
-                            >
-                              {h}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {items.map((t) => (
-                          <tr key={t.id}>
-                            <td className="t-body whitespace-nowrap border-b border-borda px-3 py-2.5">{date(t.date)}</td>
-                            <td className="t-body border-b border-borda px-3 py-2.5">
-                              <Link to={`/conciliacao/${t.id}`} className="text-primaria hover:underline">{t.description}</Link>
-                            </td>
-                            <td className="t-body num border-b border-borda px-3 py-2.5">{money(t.amount)}</td>
-                            <td className="border-b border-borda px-3 py-2.5">
-                              <ReconStatusBadge recon={t.recon} />
-                            </td>
-                            <td className="border-b border-borda px-3 py-2.5">
-                              <Select
-                                className="min-w-[200px] text-[13px]"
-                                value={t.category ?? ''}
-                                disabled={salvandoId === String(t.id)}
-                                aria-label={`Categoria de ${t.description}`}
-                                onChange={async (e) => {
-                                  const ok = await classificar(t.id, e.target.value)
-                                  if (ok) setToast('Categoria atualizada.')
-                                }}
-                              >
-                                {!t.category ? <option value="">Sem categoria</option> : null}
-                                {categorias.map((nome) => (
-                                  <option key={nome} value={nome}>{nome}</option>
-                                ))}
-                              </Select>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </td>
-              </tr>
-            ) : null,
-          ].filter(Boolean)
-        })}
-      </Table>
-      <Toast message={toast} />
-    </>
+    <Table
+      columns={['Data', 'Descrição', 'Valor', 'Categoria', 'Situação']}
+      toolbar={
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            className="min-w-[200px] flex-1"
+            placeholder="Buscar descrição, contraparte ou categoria"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+          />
+          {mostrarSituacao ? (
+            <Select value={situacao} onChange={(e) => setSituacao(e.target.value)} className="w-[180px]">
+              <option value="todos">Todas</option>
+              <option value="conciliado">Classificados</option>
+              <option value="pendente">Sem categoria</option>
+            </Select>
+          ) : null}
+          <Button type="button" variant="secondary" disabled={!rows.length} onClick={exportar}>
+            Baixar XLSX
+          </Button>
+        </div>
+      }
+      empty={!rows.length ? <Empty>Nenhuma saída neste filtro.</Empty> : undefined}
+      footer={<span>{rows.length} de {saidas.length} saídas</span>}
+    >
+      {rows.map((t) => {
+        const protegida = origemProtegida(t.origem)
+        return (
+          <tr key={t.id}>
+            <Td nowrap>{date(t.date)}</Td>
+            <Td>
+              <Link to={`/conciliacao/${t.id}`} className="font-medium text-primaria hover:underline">
+                {t.description || t.counterparty || '—'}
+              </Link>
+              {t.instituicao ? (
+                <span className="mt-0.5 block t-apoio text-faint">{t.instituicao}{t.numeroConta ? ` · ${t.numeroConta}` : ''}</span>
+              ) : null}
+            </Td>
+            <Td className="num">{money(t.amount)}</Td>
+            <Td>
+              <Select
+                className="min-w-[180px] text-[13px]"
+                value={t.category ?? ''}
+                disabled={protegida || salvandoId === String(t.id)}
+                aria-label={`Categoria de ${t.description || t.id}`}
+                onChange={async (e) => {
+                  const ok = await classificar(t.id, e.target.value)
+                  if (ok) onToast('Categoria atualizada.')
+                }}
+              >
+                {!t.category ? <option value="">Sem categoria</option> : null}
+                {categorias.map((nome) => (
+                  <option key={nome} value={nome}>{nome}</option>
+                ))}
+              </Select>
+              {protegida ? (
+                <span className="mt-0.5 block t-apoio text-faint">Lançamento do banco — não edita aqui.</span>
+              ) : null}
+            </Td>
+            <Td><SituacaoBadge recon={t.recon} /></Td>
+          </tr>
+        )
+      })}
+    </Table>
   )
 }
 
 export function ConciliacaoPage() {
+  const { period } = useAppViewModel()
   const { saidas, kpis, categorias, classificar, salvandoId, carregando, erro, toast, setToast } = useConciliacaoViewModel()
-  const cards = [
-    { label: 'Conciliados', n: kpis.conciliado, to: '/conciliacao/pendencias?estado=conciliado' },
-    { label: 'Pendentes', n: kpis.pendente, to: '/conciliacao/pendencias?estado=pendente' },
-    { label: 'Divergentes', n: kpis.divergencia, to: '/conciliacao/pendencias?estado=divergencia' },
-    { label: 'Sugestões', n: kpis.sugestao, to: '/conciliacao/pendencias?estado=sugestao' },
-    { label: 'Duplicidades', n: kpis.duplicidade, to: '/conciliacao/pendencias?estado=duplicidade' },
-  ]
-
   const gastosPorCategoria = useMemo(() => buildGastoCategoriaRows(saidas), [saidas])
-  const iaPorCategoria = useMemo(() => buildIaCategoriaRows(saidas), [saidas])
+  const classificados = useMemo(() => saidas.filter((t) => t.recon === 'conciliado'), [saidas])
 
-  const saidaMercadorias = useMemo(() => {
-    const map = new Map()
-    for (const t of saidas) {
-      const g = gastoChartGroup(t.category)
-      const meta = GASTO_GROUP_META[g] ?? GASTO_GROUP_META.outros
-      const h = { categoria: meta.label, subcategoria: t.category || '—', subsub: '—' }
-      const key = `${h.categoria}|${h.subcategoria}`
-      const row = map.get(key) ?? { h, items: [] }
-      row.items.push(t)
-      map.set(key, row)
-    }
-    return [...map.values()].sort((a, b) => {
-      if (a.h.categoria !== b.h.categoria) return a.h.categoria.localeCompare(b.h.categoria, 'pt-BR')
-      return a.h.subcategoria.localeCompare(b.h.subcategoria, 'pt-BR')
-    })
-  }, [saidas])
+  function exportarClassificados() {
+    if (!classificados.length) return
+    const ok = baixarConciliacao(nomeArquivoConciliacao(period, true), classificados)
+    if (ok) setToast('Planilha dos classificados baixada.')
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         kicker="Operação"
         title="Conciliação"
-        subtitle="Movimentações de Open Finance, importação e lançamento manual. Categorias são generalistas; valor igual isolado não define correspondência."
+        subtitle="Classifique as saídas do período. Com categoria conhecida o item entra como classificado; sem categoria fica pendente."
+        actions={
+          <>
+            <Link to="/conciliacao/insights">
+              <Button>Insights</Button>
+            </Link>
+            <Button variant="secondary" onClick={exportarClassificados} disabled={!classificados.length}>
+              Baixar XLSX
+            </Button>
+            <Link to="/conciliacao/pendencias?estado=pendente">
+              <Button variant="secondary">Ver pendentes</Button>
+            </Link>
+          </>
+        }
       />
       <ConciliacaoStatus carregando={carregando} erro={erro} />
-      <div className="grid gap-4 md:grid-cols-5">
-        {cards.map((c) => <Link key={c.label} to={c.to}><Kpi label={c.label} value={String(c.n)} /></Link>)}
-      </div>
 
-      <GastosPorCategoriaCard
-        tip="Saídas agrupadas em categorias financeiras amplas (folha, ocupação, alimentação, tarifas…)."
-        rows={gastosPorCategoria}
-        categoryHref={conciliacaoCategoriaHref}
-      />
-
-      <Card className="overflow-hidden p-0">
-        <ReconSectionTitle
-          title="Conciliação com IA · por categoria"
-          subtitle="Expanda uma categoria para editar conciliação e classificação de cada lançamento."
-        />
-        <ConciliacaoIaPorCategoriaTable
-          saidas={saidas}
-          rows={iaPorCategoria}
-          categorias={categorias}
-          classificar={classificar}
-          salvandoId={salvandoId}
-        />
-      </Card>
-
-      <Card className="overflow-hidden p-0">
-        <ReconSectionTitle
-          title="Conciliação de saída"
-          subtitle="Detalhe do plano de contas da operação. A DRE usa a categoria ampla, não o produto."
-        />
-        <Table
-          columns={['Categoria', 'Subcategoria', 'Sub-subcategoria', 'Lançamentos', 'Conciliados', 'Pendentes', 'Valor']}
-          empty={!saidaMercadorias.length ? <Empty>Nenhuma saída de mercadorias neste recorte.</Empty> : undefined}
+      {!carregando && kpis.total === 0 ? (
+        <Empty
+          action={
+            <>
+              <Link to="/extratos"><Button variant="secondary">Extratos</Button></Link>
+              <Link to="/operacoes"><Button>Operações</Button></Link>
+            </>
+          }
         >
-          {saidaMercadorias.map(({ h, items }) => {
-            const conc = items.filter((t) => t.recon === 'conciliado').length
-            const pend = items.length - conc
-            const total = items.reduce((s, t) => s + t.amount, 0)
-            const sample = items.find((t) => t.recon !== 'conciliado') ?? items[0]
-            return (
-              <tr key={`${h.categoria}-${h.subcategoria}-${h.subsub}`}>
-                <Td>{h.categoria}</Td>
-                <Td>{h.subcategoria}</Td>
-                <Td>{h.subsub}</Td>
-                <Td className="num">{items.length}</Td>
-                <Td className="num">{conc}</Td>
-                <Td className="num">
-                  {pend ? (
-                    sample ? (
-                      <Link to={`/conciliacao/${sample.id}`} className="font-medium text-alerta-texto">{pend}</Link>
-                    ) : (
-                      pend
-                    )
-                  ) : (
-                    0
-                  )}
-                </Td>
-                <Td className="num">{money(total)}</Td>
-              </tr>
-            )
-          })}
-        </Table>
-      </Card>
+          Não há saídas neste período. Importe o extrato ou lance a operação para classificar.
+        </Empty>
+      ) : null}
+
+      {kpis.total > 0 ? (
+        <>
+          <StatusFaixa kpis={kpis} />
+          {kpis.pendente > 0 && kpis.conciliado === 0 ? (
+            <Banner tone="alert">
+              {kpis.pendente} saída{kpis.pendente === 1 ? '' : 's'} sem categoria.{' '}
+              <Link to="/conciliacao/pendencias?estado=pendente" className="font-medium underline">Abrir lista</Link>
+              {' · '}
+              <Link to="/conciliacao/insights" className="font-medium underline">Ver insights</Link>
+            </Banner>
+          ) : null}
+          {kpis.pendente > 0 && kpis.conciliado > 0 ? (
+            <p className="text-[13px] text-texto-secundario">
+              {kpis.pendente} ainda sem categoria.{' '}
+              <Link to="/conciliacao/insights" className="font-medium text-primaria hover:underline">Insights</Link>
+            </p>
+          ) : null}
+
+          <GastosPorCategoriaCard
+            compact
+            tip="Saídas agrupadas em categorias financeiras amplas. O detalhe fica na tabela abaixo."
+            rows={gastosPorCategoria}
+            categoryHref={conciliacaoCategoriaHref}
+          />
+
+          <div>
+            <h2 className="mb-1 text-[15px] font-semibold text-texto">Saídas do período</h2>
+            <p className="t-apoio mb-3 text-texto-secundario">
+              Escolha a categoria para classificar. Lançamentos de banco sincronizado não aceitam edição.
+            </p>
+            <TabelaTrabalho
+              saidas={saidas}
+              categorias={categorias}
+              classificar={classificar}
+              salvandoId={salvandoId}
+              period={period}
+              onToast={setToast}
+            />
+          </div>
+        </>
+      ) : null}
       <Toast message={toast} />
     </div>
   )
@@ -299,36 +342,16 @@ export function ConciliacaoCategoriaDrillPage() {
   if (folha && sub && !leafDef) return <Empty>Classificação não encontrada.</Empty>
 
   const meta = GASTO_GROUP_META[groupId]
-
-  function Crumbs() {
-    return (
-      <nav className="mb-4 flex flex-wrap items-center gap-1 text-[13px] text-texto-secundario" aria-label="Navegação">
-        <Link to="/conciliacao" className="font-medium text-primaria hover:underline">Conciliação</Link>
-        <ChevronRight size={14} className="text-faint" aria-hidden />
-        {sub && subDef ? (
-          <Link to={conciliacaoCategoriaHref(groupId)} className="font-medium text-primaria hover:underline">{meta.label}</Link>
-        ) : (
-          <span className="font-medium text-texto">{meta.label}</span>
-        )}
-        {sub && subDef ? (
-          <>
-            <ChevronRight size={14} className="text-faint" aria-hidden />
-            {folha && leafDef ? (
-              <Link to={conciliacaoSubHref(groupId, sub)} className="font-medium text-primaria hover:underline">{subDef.label}</Link>
-            ) : (
-              <span className="font-medium text-texto">{subDef.label}</span>
-            )}
-          </>
-        ) : null}
-        {folha && leafDef ? (
-          <>
-            <ChevronRight size={14} className="text-faint" aria-hidden />
-            <span className="font-medium text-texto">{leafDef.label}</span>
-          </>
-        ) : null}
-      </nav>
-    )
-  }
+  const crumbs = (
+    <CategoriaCrumbs
+      groupId={groupId}
+      meta={meta}
+      sub={sub}
+      subDef={subDef}
+      folha={folha}
+      leafDef={leafDef}
+    />
+  )
 
   if (folha && leafDef && subDef) {
     const items = saidasGrupo.filter((t) => leafDef.match(t.category))
@@ -337,12 +360,12 @@ export function ConciliacaoCategoriaDrillPage() {
       <div>
         <PageHeader kicker="Conciliação" title={leafDef.label} subtitle={`${subDef.label} · ${meta.label}`} />
         <ConciliacaoStatus carregando={carregando} erro={erro} />
-        <Crumbs />
+        {crumbs}
         <p className="t-apoio mb-4 text-texto-secundario">
-          {stats.count} lançamentos · {money(-stats.amount)} · {stats.pend} pendente(s) de conciliação
+          {stats.count} lançamentos · {money(stats.amount)} · {stats.pend} sem categoria
         </p>
         <Table
-          columns={['Data', 'Descrição', 'Valor', 'Conciliação', 'Nota fiscal']}
+          columns={['Data', 'Descrição', 'Valor', 'Situação', 'Referência']}
           empty={!items.length ? <Empty>Nenhum lançamento nesta classificação.</Empty> : undefined}
         >
           {items.map((t) => {
@@ -352,14 +375,14 @@ export function ConciliacaoCategoriaDrillPage() {
                 <Td nowrap>{date(t.date)}</Td>
                 <Td><Link to={`/conciliacao/${t.id}`}>{t.description}</Link></Td>
                 <Td className="num">{money(t.amount)}</Td>
-                <Td><ReconStatusBadge recon={t.recon} /></Td>
+                <Td><SituacaoBadge recon={t.recon} /></Td>
                 <Td>
                   {doc ? (
-                    <Link to={`/documentos/${doc.id}`}>{doc.number}</Link>
+                    <span>{doc.number}</span>
                   ) : t.document ? (
-                    <Link to={`/documentos?busca=${encodeURIComponent(t.document)}`}>{t.document}</Link>
+                    <span>{t.document}</span>
                   ) : (
-                    <Link to={`/conciliacao/${t.id}`} className="text-primaria">Conciliar</Link>
+                    <Link to={`/conciliacao/${t.id}`} className="text-primaria">Classificar</Link>
                   )}
                 </Td>
               </tr>
@@ -384,9 +407,9 @@ export function ConciliacaoCategoriaDrillPage() {
       <div>
         <PageHeader kicker="Conciliação" title={subDef.label} subtitle={meta.label} />
         <ConciliacaoStatus carregando={carregando} erro={erro} />
-        <Crumbs />
+        {crumbs}
         <Table
-          columns={['Classificação', 'Lançamentos', 'Valor', 'Conciliados', 'Pendentes']}
+          columns={['Classificação', 'Lançamentos', 'Valor', 'Classificados', 'Sem categoria']}
           empty={!rows.length ? <Empty>Nenhum lançamento nesta subcategoria.</Empty> : undefined}
         >
           {rows.map(({ leaf, count, amount, conc, pend }) => (
@@ -397,7 +420,7 @@ export function ConciliacaoCategoriaDrillPage() {
                 </Link>
               </Td>
               <Td className="num">{count}</Td>
-              <Td className="num">{money(-amount)}</Td>
+              <Td className="num">{money(amount)}</Td>
               <Td className="num">{conc}</Td>
               <Td className="num">{pend > 0 ? <span className="font-medium text-alerta-texto">{pend}</span> : pend}</Td>
             </tr>
@@ -418,11 +441,11 @@ export function ConciliacaoCategoriaDrillPage() {
 
   return (
     <div>
-      <PageHeader kicker="Conciliação" title={meta.label} subtitle="Escolha uma subcategoria para ver classificações e notas fiscais." />
+      <PageHeader kicker="Conciliação" title={meta.label} subtitle="Escolha uma subcategoria para ver os lançamentos." />
       <ConciliacaoStatus carregando={carregando} erro={erro} />
-      <Crumbs />
+      {crumbs}
       <Table
-        columns={['Subcategoria', 'Lançamentos', 'Valor', 'Conciliados', 'Pendentes']}
+        columns={['Subcategoria', 'Lançamentos', 'Valor', 'Classificados', 'Sem categoria']}
         empty={!rows.length ? <Empty>Nenhuma saída nesta categoria.</Empty> : undefined}
       >
         {rows.map(({ sub: s, count, amount, conc, pend }) => (
@@ -433,7 +456,7 @@ export function ConciliacaoCategoriaDrillPage() {
               </Link>
             </Td>
             <Td className="num">{count}</Td>
-            <Td className="num">{money(-amount)}</Td>
+            <Td className="num">{money(amount)}</Td>
             <Td className="num">{conc}</Td>
             <Td className="num">{pend > 0 ? <span className="font-medium text-alerta-texto">{pend}</span> : pend}</Td>
           </tr>
@@ -444,35 +467,49 @@ export function ConciliacaoCategoriaDrillPage() {
 }
 
 export function ConciliacaoListaPage() {
-  const { saidas, carregando, erro } = useConciliacaoViewModel()
+  const { period } = useAppViewModel()
+  const { saidas, categorias, classificar, salvandoId, carregando, erro, toast, setToast } = useConciliacaoViewModel()
   const [params] = useSearchParams()
-  const estado = params.get('estado') ?? 'pendente'
-  const rows = saidas.filter((t) => t.recon === estado)
+  const estado = params.get('estado') === 'conciliado' ? 'conciliado' : 'pendente'
+  const titulo = estado === 'conciliado' ? 'Classificados' : 'Sem categoria'
+  const filtradas = useMemo(() => filtrarSaidas(saidas, { situacao: estado }), [saidas, estado])
+
   return (
-    <div>
-      <PageHeader kicker="Conciliação" title="Pendências de conciliação" />
+    <div className="space-y-5">
+      <PageHeader
+        kicker="Conciliação"
+        title={titulo}
+        subtitle={estado === 'conciliado'
+          ? 'Saídas do período com categoria conhecida.'
+          : 'Saídas do período ainda sem categoria. Classifique para entrar na DRE com o grupo certo.'}
+        actions={
+          <Link to="/conciliacao">
+            <Button variant="secondary">Voltar</Button>
+          </Link>
+        }
+      />
       <ConciliacaoStatus carregando={carregando} erro={erro} />
-      <Table columns={['Lançamento', 'Transação bancária', 'Valor', 'Status']} empty={!rows.length ? <Empty>Nenhuma pendência neste período.</Empty> : null} footer={<span>Exibindo {rows.length} pendências</span>}>
-        {rows.map((t) => (
-          <tr key={t.id}>
-            <Td>{t.description}</Td>
-            <Td><Link to={`/conciliacao/${t.id}`}>{t.counterparty || t.description}</Link></Td>
-            <Td className="num">{money(t.amount)}</Td>
-            <Td><ReconStatusBadge recon={t.recon} /></Td>
-          </tr>
-        ))}
-      </Table>
+      <TabelaTrabalho
+        saidas={filtradas}
+        categorias={categorias}
+        classificar={classificar}
+        salvandoId={salvandoId}
+        period={period}
+        onToast={setToast}
+        estadoInicial={estado}
+        mostrarSituacao={false}
+      />
+      <Toast message={toast} />
     </div>
   )
 }
 
 export function ConciliacaoDetalhePage() {
   const { id } = useParams()
-  const { item: t, categorias, classificar, carregando, erro, toast, setToast } = useConciliacaoDetalheViewModel(id)
+  const { item: t, categorias, classificar, carregando, erro, toast } = useConciliacaoDetalheViewModel(id)
   const [manual, setManual] = useState(false)
   const [reason, setReason] = useState('')
   const [categoria, setCategoria] = useState('')
-  const [hist, setHist] = useState(false)
   const [cnpjInfo, setCnpjInfo] = useState(null)
   const [cnpjError, setCnpjError] = useState('')
   const [cnpjLoading, setCnpjLoading] = useState(false)
@@ -480,7 +517,7 @@ export function ConciliacaoDetalhePage() {
   if (carregando && !t) {
     return (
       <div>
-        <PageHeader kicker="Conciliação" title="Par de conciliação" />
+        <PageHeader kicker="Conciliação" title="Classificar lançamento" />
         <ConciliacaoStatus carregando erro="" />
       </div>
     )
@@ -488,13 +525,14 @@ export function ConciliacaoDetalhePage() {
   if (!t) {
     return (
       <div>
-        <PageHeader kicker="Conciliação" title="Par de conciliação" />
+        <PageHeader kicker="Conciliação" title="Classificar lançamento" />
         {erro ? <ConciliacaoStatus carregando={false} erro={erro} /> : null}
-        <Empty>Nenhuma pendência neste período.</Empty>
+        <Empty>Lançamento não encontrado neste período.</Empty>
       </div>
     )
   }
   const foundCnpj = extractCnpj(`${t.document} ${t.description} ${t.counterparty}`)
+  const protegida = origemProtegida(t.origem)
 
   async function consultCnpj() {
     if (!foundCnpj) return
@@ -519,16 +557,31 @@ export function ConciliacaoDetalhePage() {
 
   return (
     <div>
-      <PageHeader kicker="Conciliação" title="Par de conciliação" />
+      <PageHeader
+        kicker="Conciliação"
+        title="Classificar lançamento"
+        actions={
+          <Link to="/conciliacao">
+            <Button variant="secondary">Voltar</Button>
+          </Link>
+        }
+      />
       <ConciliacaoStatus carregando={false} erro={erro} />
-      {t.recon === 'pendente' ? <Banner className="mb-4">Categoria desconhecida ou vazia. Classifique o lançamento para conciliá-lo.</Banner> : null}
+      {t.recon !== 'conciliado' && !protegida ? (
+        <Banner className="mb-4">Sem categoria conhecida. Escolha uma para classificar este lançamento.</Banner>
+      ) : null}
+      {protegida ? (
+        <Banner tone="info" className="mb-4">
+          Este lançamento veio do banco. A categoria não pode ser editada por aqui.
+        </Banner>
+      ) : null}
       <Card className="space-y-4">
         <Kv items={[
           { label: 'Transação', value: t.description },
           { label: 'Contraparte', value: t.counterparty || '—' },
           { label: 'Valor', value: money(t.amount) },
           { label: 'Categoria', value: t.category || 'Sem categoria' },
-          { label: 'Status', value: reconLabels[t.recon] ?? t.recon },
+          { label: 'Situação', value: rotuloSituacao(t.recon) },
         ]} />
         {foundCnpj ? (
           <div className="space-y-2">
@@ -543,22 +596,16 @@ export function ConciliacaoDetalhePage() {
             ) : null}
           </div>
         ) : null}
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={() => {
-            if (t.recon === 'conciliado') {
-              setToast('Lançamento já conciliado.')
-              return
-            }
-            setCategoria(t.category || '')
-            setManual(true)
-          }}>Aceitar</Button>
-          <Button variant="secondary" onClick={() => setToast('A conciliação segue a categoria do lançamento.')}>Rejeitar</Button>
-          <Button variant="secondary" onClick={() => { setCategoria(t.category || ''); setManual(true) }}>Conciliar manualmente</Button>
-          <Button variant="ghost" onClick={() => setHist(true)}>Histórico</Button>
-        </div>
+        {protegida ? null : (
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => { setCategoria(t.category || ''); setManual(true) }}>
+              {t.recon === 'conciliado' ? 'Alterar categoria' : 'Classificar'}
+            </Button>
+          </div>
+        )}
       </Card>
       <Modal
-        title="Conciliação manual"
+        title="Classificar lançamento"
         open={manual}
         onClose={() => setManual(false)}
         footer={(
@@ -580,9 +627,6 @@ export function ConciliacaoDetalhePage() {
           <Textarea value={reason} onChange={(e) => setReason(e.target.value)} />
         </Field>
       </Modal>
-      <Drawer title="Histórico de conciliação" open={hist} onClose={() => setHist(false)}>
-        <p className="t-body">Status atual: {reconLabels[t.recon]}</p>
-      </Drawer>
       <Toast message={toast} />
     </div>
   )

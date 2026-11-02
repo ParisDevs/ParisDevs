@@ -184,6 +184,7 @@ export function GastosPorCategoriaCard({
   tip,
   rows,
   categoryHref,
+  compact = false,
 }
 
 
@@ -194,7 +195,7 @@ export function GastosPorCategoriaCard({
   const totalAmount = sorted.reduce((s, r) => s + r.amount, 0)
   const totalCount = sorted.reduce((s, r) => s + r.count, 0)
   const max = sorted[0]?.amount ?? 0
-  const plotH = 148
+  const plotH = compact ? 100 : 148
 
   return (
     <Card className="overflow-hidden p-0">
@@ -209,7 +210,7 @@ export function GastosPorCategoriaCard({
       ) : (
         <>
           <div className="px-3 pb-2 pt-5" aria-hidden={false}>
-            <div className="flex h-[148px] items-end justify-center gap-1.5 sm:gap-2 md:gap-2.5">
+            <div className={compact ? 'flex h-[100px] items-end justify-center gap-1.5 sm:gap-2 md:gap-2.5' : 'flex h-[148px] items-end justify-center gap-1.5 sm:gap-2 md:gap-2.5'}>
               {sorted.map((row) => {
                 const h = max ? Math.max(36, Math.round((row.amount / max) * plotH)) : 36
                 const Icon = row.Icon
@@ -240,42 +241,46 @@ export function GastosPorCategoriaCard({
               <p className="t-apoio text-texto-secundario">100%</p>
             </div>
           </div>
-          <div className="border-t border-borda bg-superficie-2 px-4 py-2.5">
-            <p className="text-[11px] font-semibold tracking-[0.06em] text-faint uppercase">Gastos por categoria</p>
-          </div>
-          <ul className="divide-y divide-borda">
-            {sorted.map((row) => {
-              const Icon = row.Icon
-              const href = categoryHref?.(row.id)
-              const label = href ? (
-                <Link to={href} className="truncate text-[14px] font-semibold text-primaria hover:underline">
-                  {row.label}
-                </Link>
-              ) : (
-                <p className="truncate text-[14px] font-semibold text-texto">{row.label}</p>
-              )
-              return (
-                <li key={row.id} className="flex items-center gap-3 px-4 py-3.5">
-                  <span
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white"
-                    style={{ backgroundColor: row.color }}
-                  >
-                    <Icon size={17} strokeWidth={2.25} aria-hidden />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    {label}
-                    <p className="t-apoio text-texto-secundario">
-                      {row.count} {row.count === 1 ? 'lançamento' : 'lançamentos'}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[14px] font-semibold text-texto">{money(-row.amount)}</p>
-                    <p className="t-apoio text-texto-secundario">{percent(row.pct, 0)}</p>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
+          {compact ? null : (
+            <>
+              <div className="border-t border-borda bg-superficie-2 px-4 py-2.5">
+                <p className="text-[11px] font-semibold tracking-[0.06em] text-faint uppercase">Gastos por categoria</p>
+              </div>
+              <ul className="divide-y divide-borda">
+                {sorted.map((row) => {
+                  const Icon = row.Icon
+                  const href = categoryHref?.(row.id)
+                  const label = href ? (
+                    <Link to={href} className="truncate text-[14px] font-semibold text-primaria hover:underline">
+                      {row.label}
+                    </Link>
+                  ) : (
+                    <p className="truncate text-[14px] font-semibold text-texto">{row.label}</p>
+                  )
+                  return (
+                    <li key={row.id} className="flex items-center gap-3 px-4 py-3.5">
+                      <span
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white"
+                        style={{ backgroundColor: row.color }}
+                      >
+                        <Icon size={17} strokeWidth={2.25} aria-hidden />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        {label}
+                        <p className="t-apoio text-texto-secundario">
+                          {row.count} {row.count === 1 ? 'lançamento' : 'lançamentos'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[14px] font-semibold text-texto">{money(-row.amount)}</p>
+                        <p className="t-apoio text-texto-secundario">{percent(row.pct, 0)}</p>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            </>
+          )}
         </>
       )}
     </Card>

@@ -80,16 +80,18 @@ export function useConciliacaoViewModel() {
     return filterSaidas(noRecorte)
   }, [lancamentos, scope, inicio, fim])
 
-  const kpis = useMemo(
-    () => ({
-      conciliado: saidas.filter((t) => t.recon === 'conciliado').length,
-      pendente: saidas.filter((t) => t.recon === 'pendente').length,
-      divergencia: 0,
-      sugestao: 0,
-      duplicidade: 0,
-    }),
-    [saidas],
-  )
+  const kpis = useMemo(() => {
+    const classificados = saidas.filter((t) => t.recon === 'conciliado')
+    const pendentes = saidas.filter((t) => t.recon !== 'conciliado')
+    const soma = (lista) => lista.reduce((s, t) => s + Math.abs(Number(t.amount) || 0), 0)
+    return {
+      conciliado: classificados.length,
+      pendente: pendentes.length,
+      total: saidas.length,
+      valorClassificado: soma(classificados),
+      valorPendente: soma(pendentes),
+    }
+  }, [saidas])
 
   const categorias = useMemo(
     () => categoriaCatalogo(saidas.map((t) => t.category)),
