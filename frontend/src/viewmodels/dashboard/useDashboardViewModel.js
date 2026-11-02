@@ -211,7 +211,7 @@ export function useDashboardViewModel() {
     { label: 'Classificações aguardando revisão', n: pendingOps.length, to: '/ia/fila' },
     { label: 'Pendências de conciliação', n: pendingSaidas.length, to: '/conciliacao/pendencias' },
     { label: 'Bancos sem sincronização', n: cons.missing.length, to: '/conexoes' },
-    { label: 'Documentos inconsistentes', n: 0, to: '/documentos?filtro=inconsistente' },
+    // { label: 'Documentos inconsistentes', n: 0, to: '/documentos?filtro=inconsistente' },
   ]
   const pendingTotal = pending.reduce((s, c) => s + c.n, 0)
   const empty = !carregandoKpis && !erroKpis && !allScoped.length

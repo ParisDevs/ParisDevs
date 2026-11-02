@@ -9,6 +9,11 @@ public final class DreRegras {
     private DreRegras() {
     }
 
+    public static boolean isTransferencia(String texto) {
+        String valor = texto == null ? "" : texto.toLowerCase(Locale.ROOT);
+        return valor.contains("transfer");
+    }
+
     public static boolean isMercadoria(String categoria) {
         String valor = categoria == null ? "" : categoria.toLowerCase(Locale.ROOT);
         if (valor.equals("alimentos")) {

@@ -1,12 +1,14 @@
 package com.parisdevs.api.entity;
 
 
+import com.parisdevs.api.enums.OrigemDados;
 import com.parisdevs.api.enums.TipoOperacao;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Table(uniqueConstraints = @UniqueConstraint(name = "uk_operacao_origem_externa", columnNames = {"origem", "id_externo"}))
 public class Operacao {
 
     @Id
@@ -21,6 +23,11 @@ public class Operacao {
     @ManyToOne
     @JoinColumn (name = "fkContaBancaria")
     private ContaBancaria contaBancaria;
+
+    @Enumerated(EnumType.STRING)
+    private OrigemDados origem;
+
+    private String idExterno;
 
     public Long getIdOperacao() {
         return idOperacao;
@@ -76,5 +83,21 @@ public class Operacao {
 
     public void setContaBancaria(ContaBancaria contaBancaria) {
         this.contaBancaria = contaBancaria;
+    }
+
+    public OrigemDados getOrigem() {
+        return origem == null ? OrigemDados.MANUAL : origem;
+    }
+
+    public void setOrigem(OrigemDados origem) {
+        this.origem = origem;
+    }
+
+    public String getIdExterno() {
+        return idExterno;
+    }
+
+    public void setIdExterno(String idExterno) {
+        this.idExterno = idExterno;
     }
 }

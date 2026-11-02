@@ -27,6 +27,7 @@ public interface DashboardRepository extends Repository<ContaBancaria, Long> {
               AND o.dtHora < :fim
               AND o.tipoOperacao = :tipo
               AND (:idFilial IS NULL OR o.contaBancaria.filial.idFilial = :idFilial)
+              AND LOWER(CONCAT(COALESCE(o.categoria, ''), ' ', COALESCE(o.razaoSocial, ''))) NOT LIKE '%transfer%'
             """)
     Double somaOperacoes(
             @Param("inicio") LocalDateTime inicio,

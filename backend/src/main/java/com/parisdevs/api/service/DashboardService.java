@@ -6,6 +6,7 @@ import com.parisdevs.api.repository.DashboardRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -46,8 +47,8 @@ public class DashboardService {
             return BigDecimal.ZERO;
         }
         if (value instanceof BigDecimal decimal) {
-            return decimal;
+            return decimal.setScale(2, RoundingMode.HALF_UP);
         }
-        return BigDecimal.valueOf(value.doubleValue());
+        return BigDecimal.valueOf(value.doubleValue()).setScale(2, RoundingMode.HALF_UP);
     }
 }

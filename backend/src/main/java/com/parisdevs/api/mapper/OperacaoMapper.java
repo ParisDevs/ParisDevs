@@ -33,6 +33,7 @@ public class OperacaoMapper {
         operacaoResponseDto.setCategoria(operacao.getCategoria());
         operacaoResponseDto.setDtHora(operacao.getDtHora());
         operacaoResponseDto.setRazaoSocial(operacao.getRazaoSocial());
+        operacaoResponseDto.setOrigem(operacao.getOrigem().name());
 
         ContaBancaria conta = operacao.getContaBancaria();
         if (conta != null) {

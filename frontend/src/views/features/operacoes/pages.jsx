@@ -142,12 +142,13 @@ export function OperacoesPage() {
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-borda px-4 py-3">
             <p className="t-label text-texto-secundario">Filtros</p>
           </div>
-          <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-5">
+          <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-6">
             <Input
+              className="sm:col-span-2"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Buscar contraparte ou categoria"
-              aria-label="Buscar"
+              aria-label="Buscar contraparte ou categoria"
             />
             <Select value={tipo} onChange={(e) => setTipo(e.target.value)} aria-label="Tipo">
               <option value="">Tipo</option>

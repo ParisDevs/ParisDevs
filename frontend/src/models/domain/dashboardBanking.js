@@ -60,7 +60,12 @@ export function mapOperacao(dto, contasById = {}) {
     entrada: tipo === 'RECEBIMENTO',
     saida: tipo === 'PAGAMENTO',
     recon: deriveRecon(String(dto?.categoria ?? '').trim()),
+    origem: dto?.origem || 'MANUAL',
   }
+}
+
+export function origemProtegida(origem) {
+  return origem === 'ITAU' || origem === 'XP' || origem === 'PLUGGY'
 }
 
 export function mapConciliacao(dto, contasById = {}) {
@@ -118,15 +123,20 @@ function inRange(date, inicio, fim) {
   return date >= inicio && date < fim
 }
 
+export function isTransferencia(op) {
+  const hay = `${op?.category ?? ''} ${op?.razaoSocial ?? ''} ${op?.description ?? ''} ${op?.counterparty ?? ''}`.toLowerCase()
+  return hay.includes('transfer')
+}
+
 export function periodMoves(ops, inicio, fim) {
-  const rows = ops.filter((t) => t.date && inRange(t.date, inicio, fim))
+  const rows = ops.filter((t) => t.date && inRange(t.date, inicio, fim) && !isTransferencia(t))
   const entradas = round(rows.filter((t) => t.entrada).reduce((s, t) => s + t.amount, 0))
   const saidas = round(rows.filter((t) => t.saida).reduce((s, t) => s + t.amount, 0))
   return { rows, entradas, saidas, resultado: round(entradas - saidas) }
 }
 
 export function dayMoves(ops, day) {
-  const rows = ops.filter((t) => t.date === day)
+  const rows = ops.filter((t) => t.date === day && !isTransferencia(t))
   return {
     entradas: round(rows.filter((t) => t.entrada).reduce((s, t) => s + t.amount, 0)),
     saidas: round(rows.filter((t) => t.saida).reduce((s, t) => s + t.amount, 0)),
@@ -174,7 +184,7 @@ export function balanceHistory(accounts, ops, today) {
 
 export function categoryPie(ops, inicio, fim, side) {
   const rows = ops.filter(
-    (t) => t.date && inRange(t.date, inicio, fim) && t.category && (side === 'saida' ? t.saida : t.entrada),
+    (t) => t.date && inRange(t.date, inicio, fim) && t.category && !isTransferencia(t) && (side === 'saida' ? t.saida : t.entrada),
   )
   const grouped = new Map()
   for (const t of rows) {

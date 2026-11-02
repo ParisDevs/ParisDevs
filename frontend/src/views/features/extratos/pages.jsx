@@ -1,203 +1,188 @@
-import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { Banner, Button, Card, Drawer, Empty, PageHeader, Select, Table, Td, Tip, Kv } from '@/views/ui'
-import { MONTHS, chartOfAccounts, classLabels, companies, reconTips } from '@/models/fixtures'
-import { categoryLabel } from '@/models/domain/finance'
-import { date, dateTime, money, monthLong } from '@/lib/format'
-import { useAppViewModel, useScopedTx } from '@/viewmodels/AppViewModel'
-import { ReconStatusBadge } from '@/views/features/transactions/components/ReconStatusBadge'
-import { txHistory } from '@/views/features/transactions/txHistory'
+import { Link } from 'react-router-dom'
+import { Trash2 } from 'lucide-react'
+import { Button, Card, Empty, Input, Kv, Modal, PageHeader, Select, Table, Td, Toast } from '@/views/ui'
+import { dateTime, money } from '@/lib/format'
+import { origemProtegida } from '@/models/domain/dashboardBanking'
+import { useExtratoDetalheViewModel, useExtratosViewModel } from '@/viewmodels/extratos/useExtratosViewModel'
 
+function valorAssinado(row) {
+  if (row.saida) return -row.amount
+  return row.amount
+}
 
 export function ExtratosPage() {
-  const { scope, txFilter, setTxFilter, audit, accounts } = useAppViewModel()
-  const tx = useScopedTx()
-  const q = txFilter
-  const search = q.search.trim().toLowerCase()
-  const contas = accounts.filter(
-    (a) => (scope === 'grupo' || a.companyId === scope) && (!q.cnpj || a.companyId === q.cnpj) && (!q.banco || a.bank === q.banco),
-  )
-  const categorias = chartOfAccounts.filter((c) => c.parent && !chartOfAccounts.some((x) => x.parent === c.code))
-  const origens = [...new Set(accounts.map((a) => a.provider))]
-  const headActive = [q.periodo, q.cnpj, q.banco, q.conta, q.categoria, q.status, q.origem, q.tipo].some(Boolean)
-
-  const rows = tx.filter((t) => {
-    const acc = accounts.find((a) => a.id === t.accountId)
-    if (q.periodo && t.competence !== q.periodo) return false
-    if (q.cnpj && t.companyId !== q.cnpj) return false
-    if (q.banco && acc?.bank !== q.banco) return false
-    if (q.conta && t.accountId !== q.conta) return false
-    if (q.categoria && t.category !== q.categoria) return false
-    if (q.status && t.status !== q.status) return false
-    if (q.origem && t.source !== q.origem && acc?.provider !== q.origem) return false
-    if (q.tipo === 'entrada' && t.amount < 0) return false
-    if (q.tipo === 'saida' && t.amount >= 0) return false
-    if (search) {
-      const hay = `${t.description} ${t.counterparty} ${t.document}`.toLowerCase()
-      if (!hay.includes(search)) return false
-    }
-    return true
-  })
-
-  function clearHeadFilters() {
-    setTxFilter({ periodo: '', cnpj: '', banco: '', conta: '', categoria: '', status: '', origem: '', tipo: '' })
-  }
+  const {
+    q,
+    setQ,
+    tipo,
+    setTipo,
+    bank,
+    setBank,
+    accountId,
+    setAccountId,
+    banks,
+    contasFiltro,
+    rows,
+    carregando,
+    erro,
+    toast,
+    pendingDelete,
+    setPendingDelete,
+    saving,
+    remove,
+    empty,
+    emptyRecorte,
+  } = useExtratosViewModel()
 
   return (
     <div>
       <PageHeader
         kicker="Operação"
         title="Extratos"
-        subtitle="Movimentações de Open Finance, importação e entrada manual, no mesmo modelo."
+        subtitle="Lançamentos da conta. Os manuais alteram o saldo ao serem excluídos. Os vindos do banco só mudam numa nova sincronização."
         actions={<Link to="/extratos/importar"><Button>Importar extrato</Button></Link>}
       >
         <Card className="p-0">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-borda px-4 py-3">
-            <p className="t-label text-texto-secundario">Filtros</p>
-            {headActive ? (
-              <button type="button" className="t-label" onClick={clearHeadFilters}>
-                Limpar filtros
-              </button>
-            ) : null}
-          </div>
           <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-4">
-            <Select value={q.periodo} onChange={(e) => setTxFilter({ periodo: e.target.value })} aria-label="Período">
-              <option value="">Período</option>
-              {MONTHS.map((m) => <option key={m} value={m}>{monthLong(m)}</option>)}
-            </Select>
-            <Select value={q.cnpj} onChange={(e) => setTxFilter({ cnpj: e.target.value, conta: '' })} aria-label="CNPJ">
-              <option value="">CNPJ</option>
-              {companies.map((c) => <option key={c.id} value={c.id}>{c.fantasy}</option>)}
-            </Select>
-            <Select value={q.banco} onChange={(e) => setTxFilter({ banco: e.target.value, conta: '' })} aria-label="Banco">
-              <option value="">Banco</option>
-              {[...new Set(accounts.map((a) => a.bank))].map((b) => <option key={b}>{b}</option>)}
-            </Select>
-            <Select value={q.conta} onChange={(e) => setTxFilter({ conta: e.target.value })} aria-label="Conta">
-              <option value="">Conta</option>
-              {contas.map((a) => <option key={a.id} value={a.id}>{a.bank} {a.number}</option>)}
-            </Select>
-            <Select value={q.categoria} onChange={(e) => setTxFilter({ categoria: e.target.value })} aria-label="Categoria">
-              <option value="">Categoria</option>
-              {categorias.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
-            </Select>
-            <Select value={q.status} onChange={(e) => setTxFilter({ status: e.target.value })} aria-label="Status">
-              <option value="">Status</option>
-              {Object.entries(classLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </Select>
-            <Select value={q.origem} onChange={(e) => setTxFilter({ origem: e.target.value })} aria-label="Origem">
-              <option value="">Origem</option>
-              <option value="open_finance">Open Finance</option>
-              <option value="import">Importação</option>
-              <option value="manual">Manual</option>
-              {origens.map((o) => <option key={o}>{o}</option>)}
-            </Select>
-            <Select value={q.tipo} onChange={(e) => setTxFilter({ tipo: e.target.value })} aria-label="Tipo">
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar lançamento" aria-label="Busca" />
+            <Select value={tipo} onChange={(e) => setTipo(e.target.value)} aria-label="Tipo">
               <option value="">Tipo</option>
-              <option value="entrada">Entrada</option>
-              <option value="saida">Saída</option>
+              <option value="RECEBIMENTO">Entrada</option>
+              <option value="PAGAMENTO">Saída</option>
+            </Select>
+            <Select value={bank} onChange={(e) => { setBank(e.target.value); setAccountId('') }} aria-label="Banco">
+              <option value="">Banco</option>
+              {banks.map((b) => <option key={b} value={b}>{b}</option>)}
+            </Select>
+            <Select value={accountId} onChange={(e) => setAccountId(e.target.value)} aria-label="Conta">
+              <option value="">Conta</option>
+              {contasFiltro.map((a) => <option key={a.id} value={a.id}>{a.bank} {a.number}</option>)}
             </Select>
           </div>
         </Card>
       </PageHeader>
-      <Table
-        columns={['Data', 'Descrição', 'Contraparte', 'Valor', 'Tipo', 'Status', 'Log']}
-        empty={!rows.length ? (
-          <Empty action={!tx.length ? <Link to="/extratos/importar"><Button>Importar extrato</Button></Link> : undefined}>
-            {tx.length ? 'Nenhuma transação neste filtro.' : 'O extrato ainda não foi importado.'}
-          </Empty>
-        ) : null}
-        footer={<span>Exibindo {rows.length} de {tx.length} lançamentos</span>}
-      >
-        {rows.map((t) => {
-          const last = txHistory(t, audit)[0]
-          return (
+
+      {erro ? <p className="t-body mb-4 text-erro">{erro}</p> : null}
+      {carregando ? <p className="t-body text-texto-secundario">Carregando...</p> : null}
+
+      {!carregando ? (
+        <Table
+          columns={['Data', 'Descrição', 'Conta', 'Valor', 'Tipo', 'Origem', '']}
+          empty={empty ? (
+            <Empty action={emptyRecorte ? <Link to="/extratos/importar"><Button>Importar extrato</Button></Link> : undefined}>
+              {emptyRecorte ? 'Nenhum lançamento neste período.' : 'Nenhum lançamento neste filtro.'}
+            </Empty>
+          ) : null}
+          footer={<span>Exibindo {rows.length} lançamentos</span>}
+        >
+          {rows.map((t) => (
             <tr key={t.id}>
-              <Td nowrap>{date(t.date)}</Td>
-              <Td><Link to={`/extratos/${t.id}`}>{t.description}</Link></Td>
-              <Td>{t.counterparty || '—'}</Td>
-              <Td className="num">{money(t.amount)}</Td>
-              <Td>{t.amount >= 0 ? 'Entrada' : 'Saída'}</Td>
-              <Td><ReconStatusBadge recon={t.recon} /></Td>
+              <Td nowrap>{t.dtHora ? dateTime(t.dtHora) : t.date}</Td>
+              <Td><Link to={`/extratos/${t.id}`}>{t.razaoSocial || '—'}</Link></Td>
+              <Td>{t.instituicao} {t.numeroConta}</Td>
+              <Td className="num">{money(valorAssinado(t))}</Td>
+              <Td>{t.entrada ? 'Entrada' : 'Saída'}</Td>
+              <Td>{t.origem || 'MANUAL'}</Td>
               <Td>
-                {last ? (
-                  <Link to={`/extratos/${t.id}`} className="block">
-                    <span className="block font-medium text-texto">{last.action}</span>
-                    <span className="t-apoio text-faint">{dateTime(last.at)} · {last.user}</span>
-                  </Link>
-                ) : '—'}
+                {origemProtegida(t.origem) ? null : (
+                  <Button variant="ghost" className="h-8 px-2" title="Excluir" aria-label="Excluir" onClick={() => setPendingDelete(t)}>
+                    <Trash2 size={14} />
+                  </Button>
+                )}
               </Td>
             </tr>
-          )
-        })}
-      </Table>
+          ))}
+        </Table>
+      ) : null}
+
+      <Modal
+        title="Excluir lançamento"
+        open={!!pendingDelete}
+        onClose={() => setPendingDelete(null)}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setPendingDelete(null)}>Cancelar</Button>
+            <Button onClick={remove} disabled={saving}>Excluir</Button>
+          </>
+        }
+      >
+        <p className="t-body text-texto-secundario">
+          Deseja excluir {pendingDelete?.razaoSocial ? `o lançamento de ${pendingDelete.razaoSocial}` : 'este lançamento'}?
+          O saldo desta conta muda só por este valor. O dashboard passa a ler o saldo novo ao ser aberto de novo.
+        </p>
+      </Modal>
+      <Toast message={toast} />
     </div>
   )
 }
 
 export function ExtratoDetalhePage() {
-  const { id } = useParams()
-  const tx = useScopedTx()
-  const { transactions, audit, accounts } = useAppViewModel()
-  const [hist, setHist] = useState(false)
-  const t = tx.find((x) => x.id === id) ?? transactions.find((x) => x.id === id)
-  if (!t) return <Empty>Nenhuma transação neste filtro.</Empty>
-  const acc = accounts.find((a) => a.id === t.accountId)
-  const dup = t.duplicateOf ? transactions.find((x) => x.id === t.duplicateOf) : null
-  const log = txHistory(t, audit)
+  const {
+    operacao,
+    carregando,
+    erro,
+    toast,
+    confirmDelete,
+    setConfirmDelete,
+    saving,
+    remove,
+    missing,
+  } = useExtratoDetalheViewModel()
 
-  function LogList() {
-    if (!log.length) return <Empty>Nenhuma alteração depois da importação.</Empty>
+  if (carregando) {
     return (
-      <ol className="space-y-4">
-        {log.map((row, i) => (
-          <li key={row.at + row.action + i} className="border-b border-borda pb-4 last:border-0 last:pb-0">
-            <p className="text-[14px] font-semibold">{row.action}</p>
-            <p className="t-apoio mt-1 text-texto-secundario">{dateTime(row.at)} · {row.user}</p>
-            <p className="t-body mt-2">
-              <span className="text-faint">Antes </span>{row.before}
-              <span className="text-faint"> → Depois </span>{row.after}
-            </p>
-            {row.reason ? <p className="t-apoio mt-1 text-texto-secundario">{row.reason}</p> : null}
-          </li>
-        ))}
-      </ol>
+      <div>
+        <PageHeader kicker="Extratos" title="Lançamento" />
+        <p className="t-body text-texto-secundario">Carregando...</p>
+      </div>
+    )
+  }
+
+  if (missing) {
+    return (
+      <div>
+        <PageHeader kicker="Extratos" title="Lançamento" />
+        {erro ? <p className="t-body mb-4 text-erro">{erro}</p> : null}
+        <Empty>Nenhum lançamento neste recorte.</Empty>
+      </div>
     )
   }
 
   return (
     <div>
-      <PageHeader kicker="Extratos" title={t.description} actions={<Button variant="ghost" onClick={() => setHist(true)}>Ver histórico</Button>} />
-      {t.recon === 'duplicidade' && dup ? <Banner tone="alert" className="mb-4">Este lançamento parece repetir {dup.document} de {date(dup.date)}.</Banner> : null}
-      {t.recon === 'interna' ? (
-        <Banner tone="info" className="mb-4">
-          <span className="inline-flex items-center gap-1.5">
-            Movimentação interna
-            <Tip text={reconTips.interna ?? ''} />
-          </span>
-        </Banner>
-      ) : null}
+      <PageHeader
+        kicker="Extratos"
+        title={operacao.razaoSocial || 'Lançamento'}
+        actions={origemProtegida(operacao.origem) ? null : <Button variant="secondary" onClick={() => setConfirmDelete(true)}>Excluir</Button>}
+      />
+      {erro ? <p className="t-body mb-4 text-erro">{erro}</p> : null}
       <Card>
         <Kv items={[
-          { label: 'Banco', value: acc?.bank },
-          { label: 'Conta', value: acc?.number },
-          { label: 'Data', value: date(t.date) },
-          { label: 'Valor', value: money(t.amount) },
-          { label: 'Descrição', value: t.description },
-          { label: 'Contraparte', value: t.counterparty || '—' },
-          { label: 'Documento', value: t.document || '—' },
-          { label: 'Origem', value: t.source === 'import' ? 'Importação de extrato' : t.source === 'manual' ? 'Entrada manual' : acc?.provider ?? 'Open Finance' },
-          { label: 'Categoria', value: categoryLabel(t.category) },
-          { label: 'Centro de custo', value: t.costCenter ?? '—' },
+          { label: 'Instituição', value: operacao.instituicao || '—' },
+          { label: 'Conta', value: operacao.numeroConta || '—' },
+          { label: 'Data', value: operacao.dtHora ? dateTime(operacao.dtHora) : operacao.date },
+          { label: 'Valor', value: money(valorAssinado(operacao)) },
+          { label: 'Tipo', value: operacao.entrada ? 'Entrada' : 'Saída' },
+          { label: 'Categoria', value: operacao.category || '—' },
+          { label: 'Origem', value: operacao.origem || 'MANUAL' },
         ]} />
-        <div className="mt-6 flex flex-wrap gap-2">
-          <Link to={`/ia/revisao/${t.id}`}><Button>Revisar classificação</Button></Link>
-          <Link to={`/conciliacao/${t.id}`}><Button variant="secondary">Conciliação</Button></Link>
-        </div>
       </Card>
-      <Drawer title="Histórico da transação" open={hist} onClose={() => setHist(false)}>
-        <LogList />
-      </Drawer>
+      <Modal
+        title="Excluir lançamento"
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setConfirmDelete(false)}>Cancelar</Button>
+            <Button onClick={remove} disabled={saving}>Excluir</Button>
+          </>
+        }
+      >
+        <p className="t-body text-texto-secundario">
+          O saldo desta conta deixa de incluir este valor. Ao abrir o dashboard, o indicador consolidado já reflete a exclusão.
+        </p>
+      </Modal>
+      <Toast message={toast} />
     </div>
   )
 }

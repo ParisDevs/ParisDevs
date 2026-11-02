@@ -14,6 +14,7 @@ public class OperacaoResponseDto {
     private String razaoSocial;
     private String categoria;
     private LocalDateTime dtHora;
+    private String origem;
     private ContaBancariaResponseSimplesDto contaBancariaDto;
 
     public static class ContaBancariaResponseSimplesDto {
@@ -111,6 +112,14 @@ public class OperacaoResponseDto {
 
     public void setDtHora(LocalDateTime dtHora) {
         this.dtHora = dtHora;
+    }
+
+    public String getOrigem() {
+        return origem;
+    }
+
+    public void setOrigem(String origem) {
+        this.origem = origem;
     }
 
     public ContaBancariaResponseSimplesDto getContaBancariaDto() {

@@ -142,6 +142,10 @@ public class DreService {
                 if (operacao.getDtHora().isBefore(inicio) || !operacao.getDtHora().isBefore(fim)) {
                     continue;
                 }
+                if (DreRegras.isTransferencia(operacao.getCategoria())
+                        || DreRegras.isTransferencia(operacao.getRazaoSocial())) {
+                    continue;
+                }
                 double valor = operacao.getValorOperacao() == null ? 0 : operacao.getValorOperacao();
                 if (operacao.getTipoOperacao() == TipoOperacao.RECEBIMENTO) {
                     receita += valor;

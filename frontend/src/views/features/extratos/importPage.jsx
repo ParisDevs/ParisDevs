@@ -1,9 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Banner, Button, Card, Empty, Field, Input, PageHeader, Select, Table, Td, Toast } from '@/views/ui'
 import { Dropzone } from '@/views/features/documentos/components/Dropzone'
-import { companies } from '@/models/fixtures'
-import { formatFromName, markDuplicates, parseByFormat, validateImportFile } from '@/models/domain/statementImport'
+import { formatFromName, parseByFormat, validateImportFile } from '@/models/domain/statementImport'
+import { linhaJaExistente, operacaoDaLinha } from '@/models/domain/extratoLancamento'
+import { inScope, mapConta, mapOperacao } from '@/models/domain/dashboardBanking'
+import { listarContasBancarias } from '@/models/api/contaBancariaService'
+import { cadastrarOperacao, listarOperacoes } from '@/models/api/operacaoService'
 import { money } from '@/lib/format'
 import { useAppViewModel } from '@/viewmodels/AppViewModel'
 
@@ -20,11 +23,13 @@ function readFile(file) {
 }
 
 export function ImportarExtratoPage() {
-  const { accounts, scope, transactions, addTransactions, session } = useAppViewModel()
+  const { scope } = useAppViewModel()
   const navigate = useNavigate()
-  const scopedAccounts = accounts.filter((a) => scope === 'grupo' || a.companyId === scope)
-  const [accountId, setAccountId] = useState(scopedAccounts[0]?.id ?? '')
+  const [contas, setContas] = useState([])
+  const [operacoes, setOperacoes] = useState([])
+  const [accountId, setAccountId] = useState('')
   const [hover, setHover] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [fileName, setFileName] = useState('')
   const [format, setFormat] = useState(null)
   const [error, setError] = useState('')
@@ -33,8 +38,51 @@ export function ImportarExtratoPage() {
   const [toast, setToast] = useState(null)
   const [manual, setManual] = useState({ date: '', description: '', amount: '', counterparty: '', document: '' })
 
-  const account = accounts.find((a) => a.id === accountId)
+  const scopedAccounts = useMemo(
+    () => contas.filter((a) => inScope(a.companyId, scope)),
+    [contas, scope],
+  )
+  const account = scopedAccounts.find((a) => a.id === accountId)
   const invalid = rows.some((r) => r.missing.length > 0)
+
+  useEffect(() => {
+    let ativo = true
+    Promise.all([listarContasBancarias(), listarOperacoes()])
+      .then(([contasDto, opsDto]) => {
+        if (!ativo) return
+        const mappedContas = (contasDto || []).map(mapConta).filter((a) => a.id)
+        const byId = Object.fromEntries(mappedContas.map((a) => [a.id, a]))
+        setContas(mappedContas)
+        setOperacoes((opsDto || []).map((dto) => mapOperacao(dto, byId)).filter((t) => t.id))
+      })
+      .catch(() => {
+        if (ativo) setError('Não foi possível consultar as contas para importar.')
+      })
+    return () => {
+      ativo = false
+    }
+  }, [])
+
+  useEffect(() => {
+    setAccountId((current) => (scopedAccounts.some((a) => a.id === current) ? current : (scopedAccounts[0]?.id ?? '')))
+  }, [scopedAccounts])
+
+  useEffect(() => {
+    setRows((prev) => {
+      if (!prev.length) return prev
+      return prev.map((row) => ({
+        ...row,
+        possibleDuplicate: linhaJaExistente(row, operacoes, accountId),
+      }))
+    })
+  }, [accountId, operacoes])
+
+  function comDuplicidade(lista, contaId = accountId, base = operacoes) {
+    return lista.map((row) => ({
+      ...row,
+      possibleDuplicate: linhaJaExistente(row, base, contaId),
+    }))
+  }
 
   const summary = useMemo(() => ({
     count: rows.length,
@@ -59,8 +107,7 @@ export function ImportarExtratoPage() {
     try {
       const text = await readFile(file)
       const parsed = parseByFormat(fmt, text)
-      const marked = markDuplicates(parsed.rows, transactions.filter((t) => t.accountId === accountId))
-      setRows(marked)
+      setRows(comDuplicidade(parsed.rows))
       setWarning(parsed.warning ?? '')
     } catch {
       setError('Não foi possível ler o conteúdo do arquivo.')
@@ -76,7 +123,7 @@ export function ImportarExtratoPage() {
       if (!next.date) missing.push('data')
       if (!next.description.trim()) missing.push('descrição')
       if (!Number.isFinite(next.amount) || next.amount === 0) missing.push('valor')
-      return { ...next, missing }
+      return { ...next, missing, possibleDuplicate: linhaJaExistente(next, operacoes, accountId) }
     }))
   }
 
@@ -97,12 +144,12 @@ export function ImportarExtratoPage() {
       confidence: 100,
       missing: [],
     }
-    setRows((prev) => markDuplicates([...prev, row], transactions.filter((t) => t.accountId === accountId)))
+    setRows((prev) => comDuplicidade([...prev, row]))
     setManual({ date: '', description: '', amount: '', counterparty: '', document: '' })
     setError('')
   }
 
-  function confirm() {
+  async function confirm() {
     if (!account) {
       setError('Selecione a conta de referência.')
       return
@@ -115,42 +162,38 @@ export function ImportarExtratoPage() {
       setError('Corrija os campos obrigatórios antes de confirmar.')
       return
     }
-    const now = Date.now()
-    const txs = rows.map((r, i) => ({
-      id: `imp-${now}-${i}`,
-      sourceId: r.fitId || `IMP-${now}-${i}`,
-      accountId: account.id,
-      companyId: account.companyId,
-      date: r.date,
-      competence: r.date.slice(0, 7),
-      description: r.description,
-      counterparty: r.counterparty,
-      document: r.document,
-      amount: r.amount,
-      category: null,
-      costCenter: null,
-      confidence: r.confidence,
-      mechanism: 'manual',
-      recon: r.possibleDuplicate ? 'duplicidade' : 'pendente',
-      intercompany: false,
-      source: 'import',
-      importId: `imp-${now}`,
-      fitId: r.fitId || undefined,
-      ocrConfidence: format === 'pdf' ? r.confidence : undefined,
-    }))
-    addTransactions(txs, {
-      id: `imp-${now}`,
-      fileName: fileName || 'entrada-manual',
-      format: format ?? 'txt',
-      accountId: account.id,
-      at: new Date().toISOString().slice(0, 19),
-      user: session?.name ?? 'Sistema',
-      count: txs.length,
-      errors: warning ? [warning] : [],
-      status: warning ? 'parcial' : 'concluida',
-    })
-    setToast('Importação registrada. As movimentações entram como pendentes de conciliação.')
-    setTimeout(() => navigate('/extratos'), 600)
+    const novas = rows.filter((row) => !linhaJaExistente(row, operacoes, account.id))
+    if (!novas.length) {
+      setError('Estas linhas já estão no extrato. O saldo não foi alterado.')
+      return
+    }
+    setSaving(true)
+    setError('')
+    try {
+      const gravadas = []
+      for (const row of novas) {
+        try {
+          const dto = await cadastrarOperacao(operacaoDaLinha(row, account.id))
+          gravadas.push(mapOperacao(dto, { [account.id]: account }))
+        } catch (err) {
+          if (!/já existe/i.test(err.message || '')) throw err
+        }
+      }
+      if (!gravadas.length) {
+        setError('Estas linhas já estão no extrato. O saldo não foi alterado.')
+        return
+      }
+      setOperacoes((prev) => [...gravadas, ...prev])
+      const puladas = rows.length - gravadas.length
+      setToast(puladas
+        ? `${gravadas.length} lançamento(s) gravados. ${puladas} já existiam e não foram somados de novo.`
+        : 'Importação gravada. O saldo da conta e o dashboard incluem estes lançamentos.')
+      setTimeout(() => navigate('/extratos'), 600)
+    } catch (err) {
+      setError(err.message || 'Não foi possível gravar o extrato.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -167,7 +210,7 @@ export function ImportarExtratoPage() {
           <Field label="Conta de referência">
             <Select value={accountId} onChange={(e) => setAccountId(e.target.value)}>
               {scopedAccounts.map((a) => (
-                <option key={a.id} value={a.id}>{a.bank} {a.number} · {companies.find((c) => c.id === a.companyId)?.fantasy}</option>
+                <option key={a.id} value={a.id}>{a.bank} {a.number}{a.filialNome ? ` · ${a.filialNome}` : ''}</option>
               ))}
             </Select>
           </Field>
@@ -224,7 +267,7 @@ export function ImportarExtratoPage() {
           ))}
         </Table>
         <div className="mt-4 flex gap-2">
-          <Button onClick={confirm} disabled={!rows.length}>Confirmar importação</Button>
+          <Button onClick={confirm} disabled={!rows.length || saving}>{saving ? 'Gravando...' : 'Confirmar importação'}</Button>
           <Button variant="secondary" onClick={() => { setRows([]); setFileName(''); setWarning(''); setFormat(null) }}>Limpar prévia</Button>
         </div>
         {error ? <p className="t-body mt-3 text-erro">{error}</p> : null}
