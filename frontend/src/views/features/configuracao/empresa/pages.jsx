@@ -326,7 +326,7 @@ export function OpenFinancePage() {
       <PageHeader kicker="Configuração" title="Open Finance" subtitle="Parâmetros locais do provedor. A autorização das contas é feita em Conexões bancárias." />
       <ConfigCrumbs current="Open Finance" />
       <Banner tone="info" className="mb-4">
-        Integração ainda não operacional. Os valores ficam só neste dispositivo.
+        O sandbox da Pluggy e o extrato do Itaú são ligados em Conexões. A XP permanece aguardando autorização. Estes campos locais não chamam o banco.
       </Banner>
       <Card className="max-w-xl space-y-4">
         <div className="flex flex-wrap items-center gap-2">

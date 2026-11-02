@@ -18,6 +18,9 @@ export default defineConfig({
       '/operacoes': { target: 'http://localhost:8080', changeOrigin: true },
       '/dashboard/kpis': { target: 'http://localhost:8080', changeOrigin: true },
       '/dre': { target: 'http://localhost:8080', changeOrigin: true },
+      '/assistente': { target: 'http://localhost:8080', changeOrigin: true },
+      '/conexoes': { target: 'http://localhost:8080', changeOrigin: true },
+      '/equipe': { target: 'http://localhost:8080', changeOrigin: true },
     },
   },
 })

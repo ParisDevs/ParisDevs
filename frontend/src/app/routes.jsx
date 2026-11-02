@@ -15,12 +15,14 @@ import { DashboardPage, PendenciasPage } from '@/views/pages/dash/DashboardPages
 import {
   ConciliacaoCategoriaDrillPage,
   ConciliacaoDetalhePage,
+  ConciliacaoInsightsPage,
   ConciliacaoListaPage,
   ConciliacaoPage,
   ConexoesPage,
-  DocumentoDetalhePage,
-  DocumentoFormPage,
-  DocumentosPage,
+  // DocumentoDetalhePage,
+  // DocumentoFormPage,
+  // DocumentosPage,
+  EquipePage,
   ExtratoDetalhePage,
   ExtratosPage,
   ImportarExtratoPage,
@@ -100,20 +102,24 @@ export function AppRoutes() {
           <Route path="/operacoes/:id/editar" element={<OperacaoFormPage mode="editar" />} />
           <Route path="/operacoes/:id" element={<OperacaoDetalhePage />} />
           <Route path="/pendencias" element={<PendenciasPage />} />
-          <Route path="/documentos" element={<DocumentosPage />} />
+          {/* Tela de documentos é demonstração, sem API. Dropzone segue em extratos/importar. */}
+          {/* <Route path="/documentos" element={<DocumentosPage />} />
           <Route path="/documentos/manual" element={<DocumentoFormPage mode="manual" />} />
           <Route path="/documentos/xml" element={<DocumentoFormPage mode="xml" />} />
-          <Route path="/documentos/:id" element={<DocumentoDetalhePage />} />
+          <Route path="/documentos/:id" element={<DocumentoDetalhePage />} /> */}
           <Route path="/conexoes" element={<ConexoesPage />} />
           <Route path="/extratos" element={<ExtratosPage />} />
           <Route path="/extratos/importar" element={<ImportarExtratoPage />} />
           <Route path="/extratos/:id" element={<ExtratoDetalhePage />} />
           <Route path="/conciliacao" element={<ConciliacaoPage />} />
           <Route path="/conciliacao/pendencias" element={<ConciliacaoListaPage />} />
+          <Route path="/conciliacao/insights" element={<ConciliacaoInsightsPage />} />
           <Route path="/conciliacao/categorias/:grupo" element={<ConciliacaoCategoriaDrillPage />} />
           <Route path="/conciliacao/categorias/:grupo/:sub" element={<ConciliacaoCategoriaDrillPage />} />
           <Route path="/conciliacao/categorias/:grupo/:sub/:folha" element={<ConciliacaoCategoriaDrillPage />} />
           <Route path="/conciliacao/:id" element={<ConciliacaoDetalhePage />} />
+          <Route path="/equipe" element={<EquipePage />} />
+          <Route path="/equipe/:id" element={<EquipePage />} />
           <Route path="/ia" element={<IaHomePage />} />
           <Route path="/ia/fila" element={<IaFilaPage />} />
           <Route path="/ia/revisao/:id" element={<IaRevisaoPage />} />

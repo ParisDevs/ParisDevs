@@ -69,7 +69,7 @@ export function ConfigHomePage() {
 
 export function PerfilPage() {
   const {
-    admin,
+    gestao,
     form,
     cargoNome,
     filialNome,
@@ -135,7 +135,7 @@ export function PerfilPage() {
           </Button>
         </form>
         <CardAlso>
-          {admin ? (
+          {gestao ? (
             <Link to="/configuracoes/usuarios">
               <Button variant="secondary">Cadastro de usuários</Button>
             </Link>
@@ -488,7 +488,7 @@ function FormSection({ title, children }) {
 
 export function OrganizacaoPage() {
   const {
-    admin,
+    podeGerir,
     groupName,
     q,
     setQ,
@@ -519,7 +519,7 @@ export function OrganizacaoPage() {
     emptyFiltro,
   } = useOrganizacaoViewModel()
 
-  if (!admin) {
+  if (!podeGerir) {
     return (
       <div>
         <PageHeader kicker="Configuração" title="Organização" />

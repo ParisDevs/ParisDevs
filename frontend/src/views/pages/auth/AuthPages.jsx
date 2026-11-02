@@ -20,15 +20,15 @@ function AuthCard({
 
 ) {
   return (
-    <Card className="p-7 md:p-8">
+    <Card className="p-6 md:p-7">
       {kicker ? <p className="t-kicker mb-2">{kicker}</p> : null}
       <h1 className="t-h2">{title}</h1>
       {subtitle ? (
-        <p className="t-body mt-2 mb-6 text-texto-secundario">
+        <p className="t-body mt-2 mb-4 text-texto-secundario">
           {subtitle}
         </p>
       ) : (
-        <div className="mb-5" />
+        <div className="mb-4" />
       )}
       {children}
     </Card>
@@ -77,13 +77,13 @@ export function LoginPage() {
         {t.ssoHint}
       </p>
 
-      <div className="my-5 flex items-center gap-3">
+      <div className="my-4 flex items-center gap-3">
         <span className="h-px flex-1 bg-borda" />
         <span className="t-apoio text-faint">{t.orLocal}</span>
         <span className="h-px flex-1 bg-borda" />
       </div>
 
-      <form onSubmit={submit} className="space-y-4" noValidate>
+      <form onSubmit={submit} className="space-y-3" noValidate>
         <Field
           label={t.user}
           error={error && !email.trim() ? error : undefined}

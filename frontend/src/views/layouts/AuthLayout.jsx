@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { Link, Outlet } from 'react-router-dom'
 import { ChevronDown } from 'lucide-react'
 import { BrandMark } from '@/views/components/BrandMark'
@@ -23,6 +23,18 @@ export function AuthLayout() {
   const [lang, setLangState] = useState(loadLang)
   const t = copy[lang]
 
+  useEffect(() => {
+    const html = document.documentElement
+    const { overflow: htmlOverflow } = html.style
+    const { overflow: bodyOverflow } = document.body.style
+    html.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
+    return () => {
+      html.style.overflow = htmlOverflow
+      document.body.style.overflow = bodyOverflow
+    }
+  }, [])
+
   function setLang(next) {
     saveLang(next)
     setLangState(next)
@@ -30,7 +42,7 @@ export function AuthLayout() {
 
   return (
     <AuthLangContext.Provider value={{ lang, setLang, t }}>
-      <div className="flex min-h-svh flex-col bg-fundo">
+      <div className="flex h-svh max-h-svh flex-col overflow-hidden bg-fundo">
         <header className="flex h-14 shrink-0 items-center justify-between bg-menu px-4 md:px-8">
           <Link to="/" className="no-underline">
             <BrandMark />
@@ -56,7 +68,7 @@ export function AuthLayout() {
           </div>
         </header>
 
-        <div className="grid flex-1 lg:grid-cols-2">
+        <div className="grid min-h-0 flex-1 lg:grid-cols-2">
           <div className="relative hidden overflow-hidden bg-menu lg:block">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(201,176,122,0.18),transparent_42%),radial-gradient(circle_at_80%_80%,rgba(11,93,78,0.45),transparent_50%)]" />
             <div className="relative flex h-full flex-col justify-end p-12 text-white">
@@ -68,11 +80,11 @@ export function AuthLayout() {
             </div>
           </div>
 
-          <div className="flex flex-col items-center justify-center bg-[radial-gradient(700px_320px_at_100%_0%,rgba(11,93,78,0.07),transparent_50%)] px-4 py-10 md:px-10">
+          <div className="flex min-h-0 flex-col items-center justify-center overflow-hidden bg-[radial-gradient(700px_320px_at_100%_0%,rgba(11,93,78,0.07),transparent_50%)] px-4 py-6 md:px-10">
             <div className="w-full max-w-[440px]">
               <Outlet />
             </div>
-            <footer className="mt-8 text-center">
+            <footer className="mt-5 text-center">
               <p className="t-apoio text-texto-secundario">{t.authz}</p>
               <p className="t-apoio mt-1 text-faint">{t.version}</p>
             </footer>

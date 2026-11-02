@@ -19,11 +19,12 @@ import {
   soDigitos,
   validateFilialForm,
 } from '@/models/domain/filial'
+import { podeGestaoOrganizacao } from '@/models/domain/configuracao'
 import { useAppViewModel } from '@/viewmodels/AppViewModel'
 
 export function useOrganizacaoViewModel() {
-  const { session, recarregarFiliais } = useAppViewModel()
-  const admin = session?.role === 'administrador'
+  const { session, usuario, recarregarFiliais } = useAppViewModel()
+  const podeGerir = podeGestaoOrganizacao({ cargo: usuario?.cargo, role: session?.role })
   const [q, setQ] = useState('')
   const [empresas, setEmpresas] = useState([])
   const [carregando, setCarregando] = useState(true)
@@ -40,7 +41,7 @@ export function useOrganizacaoViewModel() {
   const [buscandoCnpj, setBuscandoCnpj] = useState(false)
 
   useEffect(() => {
-    if (!admin) {
+    if (!podeGerir) {
       setCarregando(false)
       setEmpresas([])
       return undefined
@@ -66,7 +67,7 @@ export function useOrganizacaoViewModel() {
     return () => {
       ativo = false
     }
-  }, [admin])
+  }, [podeGerir])
 
   const search = q.trim().toLowerCase()
   const rows = useMemo(() => {
@@ -222,7 +223,7 @@ export function useOrganizacaoViewModel() {
   }
 
   return {
-    admin,
+    podeGerir,
     groupName: GROUP_NAME,
     q,
     setQ,

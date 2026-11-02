@@ -297,6 +297,7 @@ export const defaultConfig = {
     status: 'nao_configurado',
     keyMasked: '',
     lastError: '',
+    instrucoes: 'Você é o assistente financeiro da Paris Devs. Responda em português, de forma curta, sobre saldo, extrato, DRE e conciliação. Não invente números.',
   },
 }
 

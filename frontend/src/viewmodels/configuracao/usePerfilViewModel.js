@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { atualizarUsuario, buscarUsuarioPorId } from '@/models/api/usuarioService'
+import { podeGestaoOrganizacao } from '@/models/domain/configuracao'
 import { cargoLabel, lerFotoArquivo } from '@/models/domain/usuario'
 import { useAppViewModel } from '@/viewmodels/AppViewModel'
 
@@ -18,7 +19,7 @@ function validatePerfil(form) {
 
 export function usePerfilViewModel() {
   const { usuario, session, atualizarSessaoUsuario } = useAppViewModel()
-  const admin = session?.role === 'administrador'
+  const gestao = podeGestaoOrganizacao({ cargo: usuario?.cargo, role: session?.role })
   const [form, setForm] = useState({
     nome: usuario?.nome ?? '',
     email: usuario?.email ?? '',
@@ -119,7 +120,7 @@ export function usePerfilViewModel() {
   const emailExibido = form.email.trim() || usuario?.email || ''
 
   return {
-    admin,
+    gestao,
     form,
     cargoNome: cargoLabel(cargo),
     filialNome: filialNome || '—',

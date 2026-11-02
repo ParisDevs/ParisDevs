@@ -7,8 +7,6 @@ import {
   ChevronDown,
   ChevronRight,
   CircleHelp,
-  FileText,
-  History,
   Landmark,
   LayoutDashboard,
   LayoutGrid,
@@ -17,6 +15,7 @@ import {
   LogOut,
   PanelLeft,
   PanelLeftClose,
+  MessagesSquare,
   Scale,
   Settings,
   Store,
@@ -24,17 +23,17 @@ import {
   Search,
   Users,
 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, } from 'react'
+import { useEffect, useRef, useState, } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { AiChatbot } from '@/views/components/AiChatbot'
 import { BrandMark } from '@/views/components/BrandMark'
 import { GROUP_NAME, companies } from '@/models/fixtures'
 import { monthLong } from '@/lib/format'
 import { fotoSrc } from '@/models/domain/usuario'
-import { ThemeToggle } from '@/views/components/ThemeToggle'
 import { UserAvatar } from '@/views/components/UserAvatar'
 import { cn } from '@/lib/cn'
 import { useAppViewModel } from '@/viewmodels/AppViewModel'
+import { useEquipeNaoLidas } from '@/viewmodels/equipe/useEquipeNaoLidas'
 import { Button, Input, Modal } from '../ui'
 
 const SETTINGS = [
@@ -86,14 +85,11 @@ const OPERACAO_ITEMS = [
   { to: '/conexoes', label: 'Conexões bancárias', icon: Plug },
   { to: '/extratos', label: 'Extratos', icon: Landmark },
   { to: '/conciliacao', label: 'Conciliação', icon: Scale },
-  { to: '/documentos', label: 'Documentos', icon: FileText, count: 'documentos' },
-  // { to: '/contas-a-pagar', label: 'Contas a pagar', icon: ArrowUpRight },
-  // { to: '/contas-a-receber', label: 'Contas a receber', icon: ArrowDownLeft },
+  // { to: '/documentos', label: 'Documentos', icon: FileText, count: 'documentos' },
 ]
 
 const ANALISE_PRIMARY = { to: '/dre', label: 'Relatórios', icon: PieChart }
 const ANALISE_MORE = [
-  { to: '/dre/historico', label: 'Histórico DRE', icon: History },
   { to: '/fluxo-de-caixa', label: 'Fluxo de caixa', icon: TrendingUp },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/alertas', label: 'Alertas', icon: Bell },
@@ -111,7 +107,8 @@ function navSectionActive(items, pathname) {
 }
 
 export function AppShell() {
-  const { session, usuario, scope, period, periodMonths, filiais: filiaisApi, setScope, setPeriod, logout, documents, txFilter, setTxFilter } = useAppViewModel()
+  const { session, usuario, scope, period, periodMonths, filiais: filiaisApi, setScope, setPeriod, logout, txFilter, setTxFilter } = useAppViewModel()
+  const equipeNaoLidas = useEquipeNaoLidas()
   const displayName = usuario?.nome ?? session?.name ?? ''
   const navigate = useNavigate()
   const location = useLocation()
@@ -178,7 +175,7 @@ export function AppShell() {
 
   useEffect(() => {
     if (navSectionActive(ANALISE_MORE, location.pathname)) setAnaliseOpen(true)
-    if (location.pathname.startsWith('/configuracoes')) setConfOpen(true)
+    if (location.pathname.startsWith('/configuracoes') || location.pathname.startsWith('/plano-de-contas')) setConfOpen(true)
   }, [location.pathname])
 
   useEffect(() => {
@@ -195,15 +192,9 @@ export function AppShell() {
     window.location.assign('/login?motivo=logout')
   }
 
-  const docPending = useMemo(
-    () => documents.filter((d) => d.status === 'pendente' || d.status === 'inconsistente').length,
-    [documents],
-  )
-
   function renderNavLinks(items) {
     return items.map((item) => {
       const Icon = item.icon
-      const n = item.count === 'documentos' ? docPending : 0
       return (
         <NavLink
           key={item.to}
@@ -222,9 +213,6 @@ export function AppShell() {
               {isActive ? <span className="absolute top-1.5 bottom-1.5 left-0 w-[2px] rounded-full bg-ouro" /> : null}
               <Icon size={15} strokeWidth={1.7} className={isActive ? 'text-ouro' : 'text-white/42'} />
               <span className="flex-1 tracking-[-0.01em]">{item.label}</span>
-              {n > 0 ? (
-                <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-ouro/20 px-1 text-[10px] font-semibold text-ouro">{n}</span>
-              ) : null}
             </>
           )}
         </NavLink>
@@ -260,7 +248,7 @@ export function AppShell() {
 
   return (
     <div className="min-h-svh bg-fundo lg:flex">
-      {open ? <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={() => setOpen(false)} /> : null}
+      {open ? <div className="fixed inset-0 z-30 bg-[#062921]/50 lg:hidden" onClick={() => setOpen(false)} /> : null}
 
       <aside
         className={`fixed inset-y-0 left-0 z-40 flex h-svh max-h-svh w-[248px] min-h-0 flex-col overflow-hidden bg-menu text-white transition-transform ${open ? 'translate-x-0' : '-translate-x-full'} ${collapsed ? '' : 'lg:sticky lg:top-0 lg:translate-x-0'}`}
@@ -304,7 +292,6 @@ export function AppShell() {
             settingsActive || location.pathname.startsWith('/configuracoes'),
             confOpen
               ? [
-                  // { to: '/plano-de-contas', label: 'Plano de contas', icon: BookOpen },
                   { to: '/configuracoes', label: 'Configurações', icon: Settings },
                 ]
               : [],
@@ -313,14 +300,11 @@ export function AppShell() {
 
         <div className="relative shrink-0 border-t border-white/[0.07] px-3 pt-3 pb-4">
           <div className="flex items-center gap-2.5 rounded-[10px] border border-white/[0.07] bg-white/[0.04] px-2.5 py-2">
-            <span className="inline-flex h-8 w-8 shrink-0 overflow-hidden rounded-full bg-white">
-              <img
-                src="/brand/paris6-bistro.png"
-                alt="Paris 6 Bistrô"
-                className="h-full w-full object-cover"
-                style={{ transform: 'scale(1.35)', objectPosition: '50% 46%' }}
-              />
-            </span>
+            <img
+              src="/brand/paris6-bistro.png"
+              alt="Paris 6 Bistrô"
+              className="h-11 w-11 shrink-0 rounded-full bg-white object-contain p-0.5"
+            />
             <div className="min-w-0">
               <strong className="block truncate text-[12.5px] font-semibold text-white/90">{GROUP_NAME}</strong>
               <p className="truncate text-[11px] text-white/38">{companies.length} empresas · Corporativo</p>
@@ -429,7 +413,23 @@ export function AppShell() {
                   </div>
                 ) : null}
               </div>
-              <ThemeToggle />
+              <button
+                type="button"
+                className={cn(
+                  'relative inline-flex h-[34px] w-[34px] items-center justify-center rounded-[6px] hover:bg-superficie-2',
+                  location.pathname.startsWith('/equipe') ? 'bg-superficie-2 text-texto' : 'text-texto-secundario',
+                )}
+                onClick={() => navigate('/equipe')}
+                title="Conversas"
+                aria-label="Conversas"
+              >
+                <MessagesSquare size={16} />
+                {equipeNaoLidas > 0 ? (
+                  <span className="absolute top-0.5 right-0.5 inline-flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-ouro px-0.5 text-[9px] font-semibold text-[#062921]">
+                    {equipeNaoLidas > 9 ? '9+' : equipeNaoLidas}
+                  </span>
+                ) : null}
+              </button>
               <button type="button" className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-[6px] text-texto-secundario hover:bg-superficie-2" onClick={() => navigate('/alertas')} aria-label="Notificações">
                 <Bell size={16} />
               </button>
