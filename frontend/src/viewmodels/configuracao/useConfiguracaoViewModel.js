@@ -1,5 +1,6 @@
 import { Building2, Landmark, Lock, Scale, ScrollText, Shield, SlidersHorizontal, Sparkles, User, Users } from 'lucide-react'
 import { GROUP_NAME } from '@/models/fixtures'
+import { isAdministrador, podeGestaoOrganizacao } from '@/models/domain/configuracao'
 import { cargoLabel } from '@/models/domain/usuario'
 import { useAppViewModel } from '@/viewmodels/AppViewModel'
 
@@ -20,7 +21,7 @@ const ORGANIZACAO = [
 
 const INTEGRACOES = [
   { to: '/configuracoes/open-finance', title: 'Open Finance', description: 'Parâmetros locais. Integração ainda não operacional.', Icon: Landmark },
-  { to: '/configuracoes/ia', title: 'API de IA', description: 'Chave mascarada neste dispositivo. Sem motor real.', Icon: Sparkles },
+  { to: '/configuracoes/ia', title: 'API de IA', description: 'Chave da OpenAI e prompt do assistente.', Icon: Sparkles },
 ]
 
 const CONFORMIDADE = [
@@ -30,7 +31,9 @@ const CONFORMIDADE = [
 
 export function useConfiguracaoViewModel() {
   const { session, usuario, filiais, logout } = useAppViewModel()
-  const admin = session?.role === 'administrador'
+  const acesso = { cargo: usuario?.cargo, role: session?.role }
+  const admin = isAdministrador(acesso)
+  const gestao = podeGestaoOrganizacao(acesso)
   const nome = usuario?.nome ?? session?.name ?? ''
   const email = usuario?.email ?? session?.email ?? ''
   const foto = usuario?.foto ?? ''
@@ -39,8 +42,8 @@ export function useConfiguracaoViewModel() {
 
   const sections = [
     { id: 'conta', title: 'Conta', items: CONTA },
-    admin ? { id: 'acesso', title: 'Acesso', items: ACESSO } : null,
-    admin ? { id: 'organizacao', title: 'Organização', items: ORGANIZACAO } : null,
+    gestao ? { id: 'acesso', title: 'Acesso', items: ACESSO } : null,
+    gestao ? { id: 'organizacao', title: 'Organização', items: ORGANIZACAO } : null,
     admin ? { id: 'integracoes', title: 'Integrações', items: INTEGRACOES } : null,
     admin ? { id: 'conformidade', title: 'Conformidade', items: CONFORMIDADE } : null,
   ].filter(Boolean)
@@ -52,6 +55,7 @@ export function useConfiguracaoViewModel() {
 
   return {
     admin,
+    gestao,
     nome,
     email,
     foto,

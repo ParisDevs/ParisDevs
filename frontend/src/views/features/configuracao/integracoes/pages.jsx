@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Badge, Banner, Button, Card, Empty, Field, Input, PageHeader, Select, Toast } from '@/views/ui'
+import { Badge, Banner, Button, Card, Empty, Field, Input, PageHeader, Select, Textarea, Toast } from '@/views/ui'
+import { salvarChaveAssistente } from '@/models/api/assistenteService'
 import { configStatusMeta } from '@/models/domain/configuracao'
 import { useAppViewModel } from '@/viewmodels/AppViewModel'
 import { CardAlso, CheckRow, ConfigCrumbs } from '@/views/features/configuracao/shell'
@@ -20,7 +21,7 @@ export function CredenciaisPage() {
       />
       <ConfigCrumbs current="Credenciais" />
       <Banner tone="info" className="mb-4">
-        Nenhum provedor Open Finance está operacional. Estes campos preparam a integração.
+        A conexão com Itaú, XP e Open Finance fica em Conexões. A credencial vai para o servidor e não é gravada neste dispositivo.
       </Banner>
       <Card className="max-w-xl space-y-4">
         <div className="flex flex-wrap items-center gap-2">
@@ -85,21 +86,41 @@ export function CredenciaisPage() {
   )
 }
 
+function mascarar(chave) {
+  const valor = chave.trim()
+  if (valor.length <= 5) return '••••'
+  return `${valor.slice(0, 3)}••••${valor.slice(-2)}`
+}
+
+function placeholderChave(provedor) {
+  if (provedor === 'claude') return 'Cole a chave sk-ant-...'
+  if (provedor === 'gemini') return 'Cole a chave AIza...'
+  return 'Cole a chave sk-...'
+}
+
+function mascaraProvedor(aiApi) {
+  const provedor = aiApi?.provider || 'openai'
+  return aiApi?.mascaras?.[provedor] || (provedor === 'openai' ? aiApi?.keyMasked : '') || ''
+}
+
 export function IaConfigPage() {
   const { config, saveConfig, recordAudit } = useAppViewModel()
   const [toast, setToast] = useState(null)
   const [key, setKey] = useState('')
+  const [instrucoes, setInstrucoes] = useState(config.aiApi.instrucoes || '')
+  const [erro, setErro] = useState('')
+  const [saving, setSaving] = useState(false)
   const status = configStatusMeta(config.aiApi.status)
   return (
     <div>
       <PageHeader
         kicker="Configuração"
         title="API de IA"
-        subtitle="Provedor opcional para classificação assistida. A chave nunca é exibida por completo depois de salva."
+        subtitle="A chave fica na memória do servidor. O prompt do agente fica neste navegador e vai em cada pergunta."
       />
       <ConfigCrumbs current="API de IA" />
       <Banner tone="info" className="mb-4">
-        Classificação automática por modelo generativo ainda não está operacional. Regras e revisão manual continuam valendo.
+        O assistente chama OpenAI, Claude ou Gemini pelo backend. Cada chave fica na memória do servidor e some ao reiniciar a API, a menos que OPENAI_API_KEY, ANTHROPIC_API_KEY ou GEMINI_API_KEY esteja definida no ambiente.
       </Banner>
       <Card className="max-w-xl space-y-4">
         <div className="flex flex-wrap items-center gap-2">
@@ -108,12 +129,15 @@ export function IaConfigPage() {
         </div>
         <Field label="Provedor">
           <Select
-            value={config.aiApi.provider}
-            onChange={(e) => saveConfig({ aiApi: { ...config.aiApi, provider: e.target.value } })}
+            value={config.aiApi.provider || 'openai'}
+            onChange={(e) => {
+              setKey('')
+              saveConfig({ aiApi: { ...config.aiApi, provider: e.target.value } })
+            }}
           >
-            <option value="">Não configurado</option>
             <option value="openai">OpenAI</option>
-            <option value="azure">Azure OpenAI</option>
+            <option value="claude">Claude</option>
+            <option value="gemini">Gemini</option>
           </Select>
         </Field>
         <Field label="Chave da API">
@@ -121,11 +145,19 @@ export function IaConfigPage() {
             type="password"
             value={key}
             onChange={(e) => setKey(e.target.value)}
-            placeholder={config.aiApi.keyMasked || 'Cole a chave'}
+            placeholder={mascaraProvedor(config.aiApi) || placeholderChave(config.aiApi.provider)}
             autoComplete="off"
           />
         </Field>
-        {config.aiApi.keyMasked ? <p className="t-apoio">Chave mascarada: {config.aiApi.keyMasked}</p> : null}
+        {mascaraProvedor(config.aiApi) ? <p className="t-apoio">Chave mascarada: {mascaraProvedor(config.aiApi)}. O valor completo não fica neste dispositivo.</p> : null}
+        <Field label="Prompt do agente">
+          <Textarea
+            value={instrucoes}
+            onChange={(e) => setInstrucoes(e.target.value)}
+            rows={6}
+          />
+        </Field>
+        {erro ? <p className="t-body text-erro">{erro}</p> : null}
         <h2 className="t-h3 pt-2">Revisão</h2>
         <CheckRow
           checked={!!config.useRules}
@@ -146,29 +178,54 @@ export function IaConfigPage() {
           Exigir revisão humana abaixo do limite
         </CheckRow>
         <Button
-          onClick={() => {
-            if (key) {
-              saveConfig({
-                aiApi: {
-                  ...config.aiApi,
-                  status: 'configurado',
-                  keyMasked: key.slice(0, 3) + '••••' + key.slice(-2),
-                  lastError: '',
-                },
-              })
-              recordAudit({
-                action: 'Chave de IA atualizada',
-                entity: 'API de IA',
-                before: config.aiApi.status,
-                after: 'configurado',
-                reason: 'Valor da chave não é registrado na auditoria.',
-              })
-              setKey('')
+          disabled={saving}
+          onClick={async () => {
+            setSaving(true)
+            setErro('')
+            try {
+              const provedor = config.aiApi.provider || 'openai'
+              if (key.trim()) {
+                await salvarChaveAssistente(provedor, key.trim())
+                const mascaras = { ...(config.aiApi.mascaras || {}), [provedor]: mascarar(key.trim()) }
+                saveConfig({
+                  aiApi: {
+                    ...config.aiApi,
+                    provider: provedor,
+                    status: 'configurado',
+                    keyMasked: provedor === 'openai' ? mascaras.openai : config.aiApi.keyMasked,
+                    mascaras,
+                    instrucoes,
+                    lastError: '',
+                  },
+                })
+                recordAudit({
+                  action: 'Chave de IA atualizada',
+                  entity: 'API de IA',
+                  before: config.aiApi.status,
+                  after: 'configurado',
+                  reason: 'Valor da chave não é registrado na auditoria.',
+                })
+                setKey('')
+              } else {
+                saveConfig({
+                  aiApi: {
+                    ...config.aiApi,
+                    provider: config.aiApi.provider || 'openai',
+                    instrucoes,
+                  },
+                })
+              }
+              setToast(key.trim()
+                ? 'Chave enviada ao servidor. O prompt ficou neste navegador.'
+                : 'Prompt do agente salvo neste navegador.')
+            } catch (err) {
+              setErro(err.message || 'Não foi possível guardar a chave.')
+            } finally {
+              setSaving(false)
             }
-            setToast('Preferências salvas neste dispositivo. A chave, se informada, ficou mascarada.')
           }}
         >
-          Salvar
+          {saving ? 'Salvando...' : 'Salvar'}
         </Button>
         <CardAlso>
           <Link to="/configuracoes/limites">

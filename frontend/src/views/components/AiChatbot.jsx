@@ -4,8 +4,17 @@ import { Sparkles, X } from 'lucide-react'
 import { useAppViewModel, useScopedTx } from '@/viewmodels/AppViewModel'
 import { reconPending } from '@/models/domain/banking'
 import { classStatus } from '@/models/domain/finance'
+import { conversarAssistente, statusAssistente } from '@/models/api/assistenteService'
+import { buscarKpisDashboard } from '@/models/api/dashboardService'
+import { periodRange } from '@/lib/period'
 
 
+
+function nomeProvedor(provedor) {
+  if (provedor === 'claude') return 'Claude'
+  if (provedor === 'gemini') return 'Gemini'
+  return 'OpenAI'
+}
 
 const HELLO = {
   from: 'bot',
@@ -49,30 +58,78 @@ function replyOf(q, ctx) {
 }
 
 export function AiChatbot() {
-  const { session, scope, config } = useAppViewModel()
+  const { session, scope, config, period } = useAppViewModel()
   const tx = useScopedTx()
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
   const [msgs, setMsgs] = useState([HELLO])
+  const [enviando, setEnviando] = useState(false)
   const endRef = useRef(null)
   const first = session?.name?.split(' ')[0] ?? ''
 
   useEffect(() => {
     if (open) endRef.current?.scrollIntoView({ block: 'end' })
-  }, [msgs, open])
+  }, [msgs, open, enviando])
 
-  function send(value = text) {
+  async function contextoAtual() {
+    const partes = [
+      `Usuário: ${first || 'não identificado'}.`,
+      `Escopo: ${scope === 'grupo' ? 'grupo' : `filial ${scope}`}.`,
+      `Período: ${period}.`,
+    ]
+    try {
+      const { inicio, fim } = periodRange(period)
+      const idFilial = scope === 'grupo' ? undefined : Number(scope)
+      const kpis = await buscarKpisDashboard(inicio, fim, idFilial)
+      partes.push(`Saldo consolidado: ${kpis.saldoConsolidado}.`)
+      partes.push(`Entradas do período: ${kpis.entradas}.`)
+      partes.push(`Saídas do período: ${kpis.saidas}.`)
+      partes.push(`Resultado do período: ${kpis.resultado}.`)
+    } catch {
+      partes.push('Os indicadores do dashboard não puderam ser lidos agora.')
+    }
+    return partes.join(' ')
+  }
+
+  async function send(value = text) {
     const q = value.trim()
-    if (!q) return
-    const pending = reconPending(tx, scope).count
-    const review = tx.filter((t) => {
-      const s = classStatus(t, config)
-      return s === 'sugerida' || s === 'revisao' || s === 'nao_classificada'
-    }).length
+    if (!q || enviando) return
     const user = { from: 'user', text: q }
-    const bot = replyOf(q, { pending, review, name: first })
-    setMsgs((m) => [...m, user, bot])
+    const historico = [...msgs, user].slice(-12).map((m) => ({
+      papel: m.from === 'user' ? 'user' : 'assistant',
+      texto: m.text,
+    }))
+    setMsgs((m) => [...m, user])
     setText('')
+    setEnviando(true)
+    try {
+      const provedor = config.aiApi?.provider || 'openai'
+      const status = await statusAssistente(provedor)
+      if (!status?.configurado) {
+        const pending = reconPending(tx, scope).count
+        const review = tx.filter((t) => {
+          const s = classStatus(t, config)
+          return s === 'sugerida' || s === 'revisao' || s === 'nao_classificada'
+        }).length
+        const local = replyOf(q, { pending, review, name: first })
+        setMsgs((m) => [...m, {
+          ...local,
+          text: `${local.text} Para o modelo responder, salve a chave em Configurações → API de IA.`,
+        }])
+        return
+      }
+      const texto = await conversarAssistente({
+        provedor,
+        instrucoes: config.aiApi?.instrucoes || '',
+        contexto: await contextoAtual(),
+        mensagens: historico,
+      })
+      setMsgs((m) => [...m, { from: 'bot', text: texto || 'O modelo não devolveu texto.' }])
+    } catch (err) {
+      setMsgs((m) => [...m, { from: 'bot', text: err.message || 'Não foi possível consultar o assistente.' }])
+    } finally {
+      setEnviando(false)
+    }
   }
 
   return (
@@ -85,7 +142,7 @@ export function AiChatbot() {
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-[13px] font-semibold">Assistente</p>
-              <p className="text-[11px] text-white/55">IA da Paris Devs</p>
+              <p className="text-[11px] text-white/55">{enviando ? `Consultando ${nomeProvedor(config.aiApi?.provider)}` : `IA da Paris Devs · ${nomeProvedor(config.aiApi?.provider)}`}</p>
             </div>
             <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-full text-white/70 hover:bg-white/10" aria-label="Fechar assistente" onClick={() => setOpen(false)}>
               <X size={16} />
@@ -104,6 +161,7 @@ export function AiChatbot() {
                 </div>
               </div>
             ))}
+            {enviando ? <p className="t-apoio text-texto-secundario">Consultando...</p> : null}
             <div ref={endRef} />
           </div>
           <form
@@ -119,8 +177,9 @@ export function AiChatbot() {
               onChange={(e) => setText(e.target.value)}
               placeholder="Pergunte sobre o financeiro"
               aria-label="Mensagem para o assistente"
+              disabled={enviando}
             />
-            <button type="submit" className="h-9 rounded-[8px] bg-primaria px-3 text-[13px] font-medium text-white hover:bg-primaria-escura">
+            <button type="submit" disabled={enviando} className="h-9 rounded-[8px] bg-primaria px-3 text-[13px] font-medium text-white hover:bg-primaria-escura disabled:opacity-60">
               Enviar
             </button>
           </form>

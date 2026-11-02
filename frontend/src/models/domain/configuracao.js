@@ -17,7 +17,7 @@ export const PERMISSION_MODULES = [
 const PERMISSION_BY_CARGO = {
   ADMINISTRADOR: ['edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'view'],
   FINANCEIRO: ['view', 'view', 'edit', 'edit', 'view', 'view', 'view', 'view', 'edit', 'none', 'none'],
-  GERENTE: ['view', 'view', 'view', 'view', 'view', 'edit', 'view', 'view', 'view', 'none', 'none'],
+  GERENTE: ['view', 'view', 'view', 'view', 'view', 'edit', 'view', 'view', 'view', 'edit', 'none'],
   CONTADOR: ['view', 'view', 'view', 'view', 'none', 'view', 'view', 'view', 'view', 'none', 'view'],
 }
 
@@ -31,6 +31,18 @@ export function permissionLabel(level) {
   if (level === 'edit') return 'Editar'
   if (level === 'view') return 'Ver'
   return '—'
+}
+
+export function isAdministrador({ cargo, role } = {}) {
+  return cargo === 'ADMINISTRADOR' || role === 'administrador'
+}
+
+export function isGerente({ cargo, role } = {}) {
+  return cargo === 'GERENTE' || role === 'gestor'
+}
+
+export function podeGestaoOrganizacao(user) {
+  return isAdministrador(user) || isGerente(user)
 }
 
 export function configStatusMeta(status) {
